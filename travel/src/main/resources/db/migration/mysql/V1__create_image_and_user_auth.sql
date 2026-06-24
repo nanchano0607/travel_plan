@@ -1,0 +1,22 @@
+CREATE TABLE image (
+    image_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    file_path VARCHAR(500) NOT NULL,
+    file_name VARCHAR(255) NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    image_size BIGINT
+);
+
+CREATE TABLE user_auth (
+    user_id VARCHAR(100) PRIMARY KEY,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    provider VARCHAR(50),
+    name VARCHAR(100) NOT NULL,
+    nickname VARCHAR(100) UNIQUE,
+    phone VARCHAR(30),
+    role VARCHAR(50) NOT NULL DEFAULT 'USER',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    user_image BIGINT,
+    CONSTRAINT fk_user_auth_image
+        FOREIGN KEY (user_image) REFERENCES image(image_id)
+);
