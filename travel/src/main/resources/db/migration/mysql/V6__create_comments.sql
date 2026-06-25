@@ -1,7 +1,7 @@
 CREATE TABLE comments (
     comment_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     post_id BIGINT NOT NULL,
-    user_id VARCHAR(100) NOT NULL,
+    user_id BIGINT NOT NULL,
     parent_comment_id BIGINT,
     content TEXT NOT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
