@@ -1,4 +1,5 @@
 package com.min.edu.auth.entity;
 
-public class AuthEntityTest {
+public enum Role {
+    USER, ADMIN
 }
