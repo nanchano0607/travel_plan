@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @Table(
-        name = "soical_auth",
+        name = "social_auth",
         uniqueConstraints = {
                 @UniqueConstraint(columnNames = {"provider", "proder_user_id"})
         }
