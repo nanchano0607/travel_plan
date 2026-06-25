@@ -1,6 +1,6 @@
 CREATE TABLE posts (
     post_id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    user_id VARCHAR(100) NOT NULL,
+    user_id BIGINT NOT NULL,
     title VARCHAR(255) NOT NULL,
     content TEXT,
     destination VARCHAR(255),

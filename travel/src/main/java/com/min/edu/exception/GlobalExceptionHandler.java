@@ -1,11 +1,11 @@
 package com.min.edu.exception;
 
+import com.min.edu.common.response.ApiResponse;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-
-import com.min.edu.common.response.ApiResponse;
 
 /**
  * 컨트롤러에서 발생한 공통 예외를 API 응답 형식으로 변환하는 클래스
@@ -15,6 +15,15 @@ import com.min.edu.common.response.ApiResponse;
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(CustomException.class)
+    public ResponseEntity<ApiResponse<Void>> handleCustomException(CustomException exception) {
+        ErrorCode errorCode = exception.getErrorCode();
+
+        return ResponseEntity
+                .status(errorCode.getStatus())
+                .body(ApiResponse.fail(errorCode));
+    }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Void>> handleMethodArgumentNotValidException(
@@ -38,6 +47,4 @@ public class GlobalExceptionHandler {
                 .badRequest()
                 .body(ApiResponse.fail("PLAN_INVALID_REQUEST", exception.getMessage()));
     }
-
-
 }

@@ -1,6 +1,6 @@
 CREATE TABLE plan (
     plan_id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    user_id VARCHAR(100) NOT NULL,
+    user_id BIGINT NOT NULL,
     title VARCHAR(255) NOT NULL,
     region_name VARCHAR(100),
     region_id VARCHAR(255),

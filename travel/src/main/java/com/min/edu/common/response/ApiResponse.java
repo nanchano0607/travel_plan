@@ -1,5 +1,7 @@
 package com.min.edu.common.response;
 
+import com.min.edu.exception.ErrorCode;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -24,6 +26,10 @@ public class ApiResponse<T> {
 
     public static <T> ApiResponse<T> success(String message, T data) {
         return new ApiResponse<>(true, "OK", message, data);
+    }
+
+    public static ApiResponse<Void> fail(ErrorCode errorCode) {
+        return fail(errorCode.getCode(), errorCode.getMessage());
     }
 
     public static ApiResponse<Void> fail(String code, String message) {
