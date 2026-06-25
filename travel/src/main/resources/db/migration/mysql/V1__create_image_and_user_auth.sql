@@ -7,7 +7,7 @@ CREATE TABLE image (
 );
 
 CREATE TABLE user_auth (
-    user_id VARCHAR(100) PRIMARY KEY,
+    user_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     email VARCHAR(255) NOT NULL UNIQUE,
     provider VARCHAR(50),
     name VARCHAR(100) NOT NULL,
