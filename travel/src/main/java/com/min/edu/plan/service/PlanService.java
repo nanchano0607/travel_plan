@@ -17,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class PlanService {
     private final PlanRepository planRepository;
 
@@ -71,7 +72,6 @@ public class PlanService {
                 .toList();
     }
 
-    @Transactional
     public void deletePlan(Long planId) {
         Plan plan = planRepository.findById(planId)
                 .orElseThrow(() -> new IllegalArgumentException("여행 계획을 찾을 수 없습니다."));

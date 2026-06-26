@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import dev.langchain4j.model.chat.ChatModel;
+import dev.langchain4j.model.chat.request.ResponseFormat;
 import dev.langchain4j.model.googleai.GoogleAiGeminiChatModel;
 
 @Configuration
@@ -20,6 +21,7 @@ public class LLMConfig {
         return GoogleAiGeminiChatModel.builder()
                     .apiKey(geminiApiKey)
                     .modelName(geminiModel)
+                    .responseFormat(ResponseFormat.JSON)
                     .build();
     }
 }
