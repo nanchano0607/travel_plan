@@ -8,6 +8,8 @@ import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.min.edu.exception.CustomException;
+import com.min.edu.exception.ErrorCode;
 import com.min.edu.plan.ai.dto.AiPlanItemResponseDto;
 import com.min.edu.plan.ai.dto.PlanRequestDto;
 import com.min.edu.plan.ai.llm.AssistantAi;
@@ -42,13 +44,13 @@ public class ChatService {
 
     private void validatePlanRequest(PlanRequestDto requestDto) {
         if (requestDto.getEndDate().isBefore(requestDto.getStartDate())) {
-            throw new IllegalArgumentException("종료일은 시작일보다 빠를 수 없습니다.");
+            throw new CustomException(ErrorCode.PLAN_INVALID_DATE_RANGE);
         }
 
         // AI 응답 길이와 장소 품질을 안정적으로 유지하기 위해 한 번에 생성할 수 있는 일수를 제한한다.
         long tripDays = ChronoUnit.DAYS.between(requestDto.getStartDate(), requestDto.getEndDate()) + 1;
         if (tripDays > MAX_TRIP_DAYS) {
-            throw new IllegalArgumentException("AI 여행 일정은 최대 7일까지 생성할 수 있습니다.");
+            throw new CustomException(ErrorCode.AI_TRIP_DAYS_EXCEEDED);
         }
     }
 
@@ -59,7 +61,7 @@ public class ChatService {
             return objectMapper.readValue(jsonResponse, new TypeReference<List<AiPlanItemResponseDto>>() {
             });
         } catch (JsonProcessingException e) {
-            throw new IllegalArgumentException("AI 응답 형식이 올바르지 않습니다.");
+            throw new CustomException(ErrorCode.AI_RESPONSE_PARSE_FAILED);
         }
     }
 

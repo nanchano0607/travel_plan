@@ -6,6 +6,8 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.min.edu.exception.CustomException;
+import com.min.edu.exception.ErrorCode;
 import com.min.edu.plan.dto.SavePlanResponseDto;
 import com.min.edu.plan.dto.SavePlanDto;
 import com.min.edu.plan.dto.SavePlanItemDto;
@@ -59,7 +61,7 @@ public class PlanService {
     @Transactional(readOnly = true)
     public SavePlanResponseDto getPlan(Long planId) {
         Plan plan = planRepository.findById(planId)
-                .orElseThrow(() -> new IllegalArgumentException("여행 계획을 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.PLAN_NOT_FOUND));
 
         return SavePlanResponseDto.from(plan);
     }
@@ -74,14 +76,14 @@ public class PlanService {
 
     public void deletePlan(Long planId) {
         Plan plan = planRepository.findById(planId)
-                .orElseThrow(() -> new IllegalArgumentException("여행 계획을 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.PLAN_NOT_FOUND));
 
         planRepository.delete(plan);
     }
 
     private void validateDateRange(SavePlanDto savePlanDto) {
         if (savePlanDto.getEndDate().isBefore(savePlanDto.getStartDate())) {
-            throw new IllegalArgumentException("종료일은 시작일보다 빠를 수 없습니다.");
+            throw new CustomException(ErrorCode.PLAN_INVALID_DATE_RANGE);
         }
     }
 
@@ -95,7 +97,7 @@ public class PlanService {
 
         for (SavePlanItemDto itemDto : savePlanDto.getPlanItems()) {
             if (itemDto.getDayNumber() > tripDays) {
-                throw new IllegalArgumentException("일정 일차는 여행 기간을 초과할 수 없습니다.");
+                throw new CustomException(ErrorCode.PLAN_ITEM_DAY_OUT_OF_RANGE);
             }
         }
     }
