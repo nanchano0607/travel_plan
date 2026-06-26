@@ -11,7 +11,7 @@ import lombok.*;
 public class CommentsRequestDTO {
 
     private Long postId;
-    private String userId;
+    private Long userId;
     private Long parentCommentId;
     private String content;
 

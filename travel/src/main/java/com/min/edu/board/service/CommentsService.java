@@ -5,6 +5,8 @@ import com.min.edu.board.dto.CommentsResponseDTO;
 import com.min.edu.board.entity.CommentsEntity;
 import com.min.edu.board.repository.CommentsRepository;
 
+import com.min.edu.exception.CustomException;
+import com.min.edu.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -56,7 +58,7 @@ public class CommentsService {
     @Transactional
     public CommentsResponseDTO updateComment(Long commentId, String newContent) {
         CommentsEntity comments = commentsRepository.findById(commentId)
-                .orElseThrow(() -> new RuntimeException("댓글을 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
         comments.setContent(newContent);
         return CommentsResponseDTO.fromEntity(comments);
     }
@@ -65,7 +67,7 @@ public class CommentsService {
     @Transactional
     public void deleteComment(Long commentId) {
         CommentsEntity comments = commentsRepository.findById(commentId)
-                .orElseThrow(() -> new RuntimeException("댓글을 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
         commentsRepository.delete(comments);
     }
 

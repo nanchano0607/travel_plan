@@ -14,7 +14,7 @@ public class CommentsResponseDTO {
 
     private Long commentId;            // 댓글 번호
     private Long postId;               // 게시글 번호
-    private String userId;             // 작성자
+    private Long userId;             // 작성자
     private Long parentCommentId;      // 부모 댓글 번호
     private String content;            // 내용
     private LocalDateTime createdAt;   // 작성 일자
