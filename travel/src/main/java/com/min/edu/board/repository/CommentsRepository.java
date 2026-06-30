@@ -19,7 +19,7 @@ public interface CommentsRepository extends JpaRepository<CommentsEntity, Long> 
     List<CommentsEntity> findByParentCommentId(Long parentCommentId);
 
     // 특정 유저의 댓글 전체 조회
-    List<CommentsEntity> findByUserId(String userId);
+    List<CommentsEntity> findByUserId(Long userId);
 
     // 게시글 댓글 수 조회
     int countByPostId(Long postId);

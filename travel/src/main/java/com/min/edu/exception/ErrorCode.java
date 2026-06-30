@@ -22,7 +22,11 @@ public enum ErrorCode {
     VERIFICATION_ATTEMPTS_EXCEEDED(HttpStatus.BAD_REQUEST, "인증 시도 횟수를 초과했습니다. 인증을 다시 요청해주세요."),
     VERIFICATION_CODE_EXPIRED(HttpStatus.GONE, "인증 코드가 만료되었습니다. 인증을 다시 요청해주세요."),
     VERIFICATION_TOO_MANY_REQUESTS(HttpStatus.TOO_MANY_REQUESTS, "인증 코드 재발송 횟수를 초과했습니다. 잠시 후 다시 시도해주세요."),
-    ;
+
+    COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "댓글을 찾을 수 없습니다."),
+    POST_NOT_FOUND(HttpStatus.NOT_FOUND, "게시글을 찾을 수 없습니다."),
+    UNAUTHORIZED_USER(HttpStatus.FORBIDDEN, "권한이 없습니다.");
+
     private final HttpStatus status;
     private final String message;
     public String getCode() {
