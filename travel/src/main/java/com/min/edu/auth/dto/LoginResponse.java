@@ -12,4 +12,7 @@ public class LoginResponse {
     private String name;
     private String nickname;
     private Role role;
+
+    private String accessToken; // AccessToken 발급용 DTO
+
 }

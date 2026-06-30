@@ -23,6 +23,12 @@ public class LoginController {
 
     private final AuthService authService;
 
+    /**
+     * 로컬 로그인 처리 API
+     *
+     * @author 이유진
+     * @version 1.0
+     */
     @Operation(summary = "로그인", description = "이메일, 비밀번호 기반 로컬 로그인을 처리합니다.")
     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "로그인 성공")
     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "이메일 또는 비밀번호 불일치")

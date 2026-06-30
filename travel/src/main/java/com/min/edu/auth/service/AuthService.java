@@ -10,6 +10,7 @@ import com.min.edu.auth.entity.EmailVerification;
 import com.min.edu.auth.entity.LocalAuth;
 import com.min.edu.auth.entity.LocalAuthStatus;
 import com.min.edu.auth.entity.UserEntity;
+import com.min.edu.security.jwt.JwtTokenProvider;
 import com.min.edu.auth.repository.EmailVerificationRepository;
 import com.min.edu.auth.repository.LocalAuthRepository;
 import com.min.edu.auth.repository.UserRepository;
@@ -29,6 +30,8 @@ public class AuthService {
     private final LocalAuthRepository localAuthRepository;
     private final EmailVerificationRepository emailVerificationRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtTokenProvider jwtTokenProvider;
+
     public SignupResponse signup(SignupRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new CustomException(ErrorCode.DUPLICATE_EMAIL);
@@ -84,12 +87,19 @@ public class AuthService {
             throw new CustomException(ErrorCode.ACCOUNT_NOT_VERIFIED);
         }
 
+        String accessToken = jwtTokenProvider.createAccessToken(
+                user.getUserId(),
+                user.getEmail(),
+                user.getRole()
+        );
+
         return LoginResponse.builder()
                 .userId(user.getUserId())
                 .email(user.getEmail())
                 .name(user.getName())
                 .nickname(user.getNickname())
                 .role(user.getRole())
+                .accessToken(accessToken)
                 .build();
     }
 
