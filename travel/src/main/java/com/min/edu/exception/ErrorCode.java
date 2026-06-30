@@ -11,6 +11,17 @@ public enum ErrorCode {
     DUPLICATE_NICKNAME(HttpStatus.CONFLICT, "이미 사용중인 닉네임입니다."),
     INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "이메일 또는 비밀번호가 일치하지 않습니다."),
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 사용자입니다."),
+
+    // REQ-AUTH-06 이메일 인증: 만료는 410(GONE)으로 구분하고, 재발송 제한은 표준 rate-limit 규약인 429로 응답
+    ACCOUNT_NOT_VERIFIED(HttpStatus.FORBIDDEN, "이메일 인증이 완료되지 않은 계정입니다."),
+    // 이메일 인증이 회원가입보다 선행되어야 함(인증 미완료 상태로 가입 제출 시)
+    EMAIL_NOT_VERIFIED(HttpStatus.BAD_REQUEST, "이메일 인증을 먼저 완료해주세요."),
+    VERIFICATION_NOT_FOUND(HttpStatus.BAD_REQUEST, "발급된 인증 코드가 없습니다. 인증을 다시 요청해주세요."),
+    INVALID_VERIFICATION_CODE(HttpStatus.BAD_REQUEST, "인증 코드가 일치하지 않습니다."),
+    VERIFICATION_ALREADY_USED(HttpStatus.BAD_REQUEST, "이미 사용된 인증 코드입니다."),
+    VERIFICATION_ATTEMPTS_EXCEEDED(HttpStatus.BAD_REQUEST, "인증 시도 횟수를 초과했습니다. 인증을 다시 요청해주세요."),
+    VERIFICATION_CODE_EXPIRED(HttpStatus.GONE, "인증 코드가 만료되었습니다. 인증을 다시 요청해주세요."),
+    VERIFICATION_TOO_MANY_REQUESTS(HttpStatus.TOO_MANY_REQUESTS, "인증 코드 재발송 횟수를 초과했습니다. 잠시 후 다시 시도해주세요."),
     ;
     private final HttpStatus status;
     private final String message;

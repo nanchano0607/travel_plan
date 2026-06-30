@@ -6,8 +6,11 @@ import com.min.edu.auth.dto.SignupRequest;
 import com.min.edu.auth.dto.SignupResponse;
 import com.min.edu.auth.dto.UpdateProfileRequest;
 import com.min.edu.auth.dto.UpdateProfileResponse;
+import com.min.edu.auth.entity.EmailVerification;
 import com.min.edu.auth.entity.LocalAuth;
+import com.min.edu.auth.entity.LocalAuthStatus;
 import com.min.edu.auth.entity.UserEntity;
+import com.min.edu.auth.repository.EmailVerificationRepository;
 import com.min.edu.auth.repository.LocalAuthRepository;
 import com.min.edu.auth.repository.UserRepository;
 import com.min.edu.exception.CustomException;
@@ -24,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AuthService {
     private final UserRepository userRepository;
     private final LocalAuthRepository localAuthRepository;
+    private final EmailVerificationRepository emailVerificationRepository;
     private final PasswordEncoder passwordEncoder;
     public SignupResponse signup(SignupRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
@@ -32,6 +36,12 @@ public class AuthService {
         if (userRepository.existsByNickname(request.getNickname())) {
             throw new CustomException(ErrorCode.DUPLICATE_NICKNAME);
         }
+
+        // 이메일 입력 단계에서 인증이 완료된 이메일만 가입을 허용(이메일 인증 선행 정책)
+        EmailVerification verification = emailVerificationRepository.findById(request.getEmail())
+                .filter(EmailVerification::isVerified)
+                .orElseThrow(() -> new CustomException(ErrorCode.EMAIL_NOT_VERIFIED));
+
         UserEntity user = UserEntity.builder()
                 .email(request.getEmail())
                 .provider("local")
@@ -43,7 +53,12 @@ public class AuthService {
         LocalAuth localAuth = new LocalAuth();
         localAuth.setUserId(user.getUserId());
         localAuth.setPassword(passwordEncoder.encode(request.getPassword()));
+        localAuth.setStatus(LocalAuthStatus.ACTIVE); // 가입 시점에 이미 이메일 인증이 끝난 상태
         localAuthRepository.save(localAuth);
+
+        // 더 이상 필요 없는 인증 기록 정리
+        emailVerificationRepository.delete(verification);
+
         return SignupResponse.builder()
                 .userId(user.getUserId())
                 .email(user.getEmail())
@@ -62,6 +77,11 @@ public class AuthService {
 
         if (!passwordEncoder.matches(request.getPassword(), localAuth.getPassword())) {
             throw new CustomException(ErrorCode.INVALID_CREDENTIALS);
+        }
+
+        // REQ-AUTH-06: 이메일 인증 전(PENDING) 계정은 로그인 차단
+        if (localAuth.getStatus() != LocalAuthStatus.ACTIVE) {
+            throw new CustomException(ErrorCode.ACCOUNT_NOT_VERIFIED);
         }
 
         return LoginResponse.builder()
