@@ -10,7 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-
+import org.springframework.beans.factory.annotation.Value;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
@@ -20,16 +20,17 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class CommentImageService {
 
+    @Value("${file.upload-dir}")
+    private String uploadDir;
     private final CommentImageRepository commentImageRepository;
     private final ImageRepository imageRepository;
 
     // 이미지 업도르 및 댓글에 연결
     @Transactional
     public void uploadImage(Long commentId, MultipartFile file) throws IOException {
-        // 파일 저장 경로
-        String uploadDir = "uploads/comment/";
+        // String uploadDir = "uploads/comment/";  ← 이 줄만 삭제
         String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
-        String filePath = uploadDir + fileName;
+        String filePath = uploadDir + fileName;  // 이 줄은 그대로, 위에서 선언한 필드를 사용
 
         // 폴더가 없을 시 생성
         File dir = new File(uploadDir);

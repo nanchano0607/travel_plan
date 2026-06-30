@@ -33,6 +33,11 @@ public class ImageEntity {
     @Column(name = "image_size")
     private Long imageSize;
 
+    // 추가: 게시글과의 연관관계
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "post_id")
+    private PostEntity post;
+
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();

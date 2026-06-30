@@ -1,6 +1,6 @@
 package com.min.edu.board.dto;
 
-import com.min.edu.board.entity.BoardEntity;
+import com.min.edu.board.entity.PostEntity;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 
 @Getter
 @NoArgsConstructor
-public class BoardDto {
+public class PostDto {
     private Long id;
     private String title;
     private String content;
@@ -16,7 +16,7 @@ public class BoardDto {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    public BoardDto(BoardEntity board) {
+    public PostDto(PostEntity board) {
         this.id = board.getId();
         this.title = board.getTitle();
         this.content = board.getContent();

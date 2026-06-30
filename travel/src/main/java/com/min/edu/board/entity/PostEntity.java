@@ -5,12 +5,12 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "boards")
+@Table(name = "posts")
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class BoardEntity {
+public class PostEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
