@@ -6,7 +6,10 @@ import com.min.edu.board.repository.BoardRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -60,5 +63,29 @@ public class BoardService {
         BoardEntity board = boardRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("게시글이 존재하지 않습니다. id: " + id));
         boardRepository.delete(board);
+    }
+
+    // 게시글 목록 페이징
+    @Transactional(readOnly = true)
+    public Page<BoardDto> getBoardList(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        return boardRepository.findAll(pageable)
+                .map(BoardDto::new);
+    }
+
+    // 제목 검색
+    @Transactional(readOnly = true)
+    public Page<BoardDto> searchByTitle(String title, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        return boardRepository.findByTitleContaining(title, pageable)
+                .map(BoardDto::new);
+    }
+
+    // 작성자 검색
+    @Transactional(readOnly = true)
+    public Page<BoardDto> searchByUserId(String userId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        return boardRepository.findByUserId(userId, pageable)
+                .map(BoardDto::new);
     }
 }

@@ -5,7 +5,7 @@ import com.min.edu.board.service.BoardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
+import org.springframework.data.domain.Page;
 import java.util.List;
 
 @RestController
@@ -44,5 +44,31 @@ public class BoardController {
     public ResponseEntity<Void> deleteBoard(@PathVariable Long id) {
         boardService.deleteBoard(id);
         return ResponseEntity.noContent().build();
+    }
+
+    // 게시글 목록 페이징
+    @GetMapping("/page")
+    public ResponseEntity<Page<BoardDto>> getBoardList(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(boardService.getBoardList(page, size));
+    }
+
+    // 제목 검색
+    @GetMapping("/search/title")
+    public ResponseEntity<Page<BoardDto>> searchByTitle(
+            @RequestParam String title,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(boardService.searchByTitle(title, page, size));
+    }
+
+    // 작성자 검색
+    @GetMapping("/search/user")
+    public ResponseEntity<Page<BoardDto>> searchByUserId(
+            @RequestParam String userId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(boardService.searchByUserId(userId, page, size));
     }
 }

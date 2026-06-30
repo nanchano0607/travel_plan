@@ -24,13 +24,13 @@ import lombok.RequiredArgsConstructor;
  */
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api")
+@RequestMapping("/api/comment")
 public class CommentCtrl {
 
     private final CommentsService commentsService;
 
     // 댓글 작성
-    @PostMapping("/comment")
+    @PostMapping
     public ApiResponse<CommentsResponseDTO> createComment(@RequestBody CommentsRequestDTO requestDTO) {
         return ApiResponse.success(commentsService.createComment(requestDTO));
     }

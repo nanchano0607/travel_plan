@@ -34,11 +34,15 @@ public enum ErrorCode {
     AI_RESPONSE_PARSE_FAILED(HttpStatus.BAD_REQUEST, "AI 응답 형식이 올바르지 않습니다."),
     AI_RESPONSE_SCHEMA_INVALID(HttpStatus.BAD_REQUEST, "AI 응답 데이터 구조가 올바르지 않습니다."),
     PLACE_VALIDATION_FAILED(HttpStatus.BAD_REQUEST, "장소 검증에 실패했습니다."),
+
+    ALREADY_LIKED(HttpStatus.CONFLICT, "이미 좋아요를 눌렀습니다."),
+    LIKE_NOT_FOUND(HttpStatus.NOT_FOUND, "좋아요를 취소했습니다."),
+
+    IMAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "이미지를 찾을 수 없습니다.")
     ;
 
     private final HttpStatus status;
     private final String message;
-
     public String getCode() {
         return name();
     }
