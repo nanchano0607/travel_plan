@@ -23,7 +23,7 @@ public class CommentsEntity {
     private Long postId;
 
     @Column(name = "user_id", nullable = false)
-    private String userId;
+    private Long userId;
 
     // null 이면 최상위 댓글, 값이 있으면 대댓글
     @Column(name = "parent_comment_id")

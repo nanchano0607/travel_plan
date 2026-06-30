@@ -23,7 +23,7 @@ public class BoardEntity {
     private String content;
 
     @Column(nullable = false)
-    private String userId;
+    private Long userId;
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
