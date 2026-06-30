@@ -35,7 +35,9 @@ public class EmailVerificationController {
     @PostMapping
     public ResponseEntity<ApiResponse<Void>> requestVerification(
             @Valid @RequestBody EmailVerificationRequest request) {
+
         emailVerificationService.requestVerification(request.getEmail());
+
         return ResponseEntity.ok(ApiResponse.<Void>success(null));
     }
 
@@ -46,7 +48,9 @@ public class EmailVerificationController {
     @PostMapping("/confirm")
     public ResponseEntity<ApiResponse<Void>> confirmVerification(
             @Valid @RequestBody EmailVerificationConfirmRequest request) {
+
         emailVerificationService.confirmVerification(request.getEmail(), request.getCode());
+
         return ResponseEntity.ok(ApiResponse.<Void>success(null));
     }
 }

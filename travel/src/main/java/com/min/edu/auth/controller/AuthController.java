@@ -42,6 +42,7 @@ public class AuthController {
     // 회원가입
     @PostMapping("/signup")
     public ResponseEntity<ApiResponse<SignupResponse>> signup(@Valid @RequestBody SignupRequest request) {
+
         SignupResponse response = authService.signup(request);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response));
@@ -63,6 +64,7 @@ public class AuthController {
             // 완료!
             Authentication authentication,
             @Valid @RequestBody UpdateProfileRequest request) {
+
         Long userId = (Long) authentication.getPrincipal();
         UpdateProfileResponse response = authService.updateProfile(userId, request);
 
