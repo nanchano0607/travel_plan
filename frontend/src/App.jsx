@@ -1,5 +1,8 @@
 import { useMemo, useState } from 'react'
 
+import PageHeader from './components/PageHeader.jsx'
+import TravelPage from './pages/TravelPage.jsx'
+
 const NAV_ITEMS = [
   { id: 'overview', label: '전체 흐름', icon: '⌂' },
   { id: 'auth', label: '로그인 · 회원가입', icon: '◎' },
@@ -86,15 +89,6 @@ function SideNav({ active, open, onNavigate }) {
   )
 }
 
-function PageHeader({ eyebrow, title, description, action }) {
-  return (
-    <div className="page-header">
-      <div><span className="eyebrow">{eyebrow}</span><h1>{title}</h1><p>{description}</p></div>
-      {action}
-    </div>
-  )
-}
-
 function OverviewPage({ onNavigate }) {
   const flows = [
     { no: '01', title: '로그인과 회원가입', text: '로컬·Google·Kakao·Naver 인증', page: 'auth', color: 'mint' },
@@ -146,18 +140,6 @@ function AuthPage() {
           <div className="social-buttons"><button>G&nbsp; Google</button><button className="kakao">Kakao</button><button className="naver">Naver</button></div>
         </section>
         <section className="info-panel"><span className="pill">TEST CHECKLIST</span><h2>확인할 기능</h2><CheckList items={['비밀번호 정책과 이메일 중복 검증','회원가입 후 이메일 인증 상태','로그인 성공 시 Access Token 발급','잘못된 로그인 요청의 401 응답','Google·Kakao·Naver OAuth 콜백']} /></section>
-      </div>
-    </>
-  )
-}
-
-function TravelPage() {
-  return (
-    <>
-      <PageHeader eyebrow="AI TRAVEL" title="AI 여행 계획 생성 · 수정" description="조건 입력부터 결과 타임라인, 장소 수정과 저장 흐름을 확인합니다." />
-      <div className="travel-layout">
-        <section className="condition-card"><h2>여행 조건 입력</h2><p>AI에게 전달할 기본 조건입니다.</p><label>여행 지역<input placeholder="예: 제주도" /></label><div className="field-row"><label>기간<select defaultValue="3"><option value="2">2일</option><option value="3">3일</option><option value="4">4일</option></select></label><label>예산<input type="number" placeholder="500000" /></label></div><label>여행 스타일<div className="tag-row"><button className="selected">맛집</button><button>자연</button><button>힐링</button><button>액티비티</button></div></label><button className="primary wide">AI 일정 생성하기 ✦</button></section>
-        <section className="timeline-card"><div className="timeline-head"><div><span>DAY 1</span><h2>제주 동쪽 하루</h2></div><button>지도 보기</button></div>{['성산일출봉','우도 산책','해녀의 집','월정리 해변'].map((place, index) => <div className="timeline-item" key={place}><i>{index + 1}</i><div><strong>{place}</strong><small>{10 + index * 2}:00 · 추천 장소</small></div><button>수정</button></div>)}<button className="secondary wide">이 일정 저장하기</button></section>
       </div>
     </>
   )
