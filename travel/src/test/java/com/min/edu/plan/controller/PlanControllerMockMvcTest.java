@@ -25,6 +25,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.min.edu.exception.GlobalExceptionHandler;
+import com.min.edu.plan.ai.service.ChatService;
 import com.min.edu.plan.dto.SavePlanDto;
 import com.min.edu.plan.dto.SavePlanResponseDto;
 import com.min.edu.plan.service.PlanService;
@@ -39,6 +40,9 @@ class PlanControllerMockMvcTest {
 
     @MockitoBean
     private PlanService planService;
+
+    @MockitoBean
+    private ChatService chatService;
 
     @Test
     @DisplayName("여행 계획 저장 요청 성공")

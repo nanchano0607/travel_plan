@@ -8,9 +8,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.min.edu.exception.CustomException;
 import com.min.edu.exception.ErrorCode;
+import com.min.edu.plan.dto.PlanItemResponseDto;
 import com.min.edu.plan.dto.SavePlanResponseDto;
 import com.min.edu.plan.dto.SavePlanDto;
 import com.min.edu.plan.dto.SavePlanItemDto;
+import com.min.edu.plan.dto.UpdatePlanItemPlaceDto;
 import com.min.edu.plan.entity.Plan;
 import com.min.edu.plan.entity.PlanItem;
 import com.min.edu.plan.repository.PlanRepository;
@@ -79,6 +81,31 @@ public class PlanService {
                 .orElseThrow(() -> new CustomException(ErrorCode.PLAN_NOT_FOUND));
 
         planRepository.delete(plan);
+    }
+
+    public PlanItemResponseDto updatePlanItemPlace(
+            Long planId,
+            Integer dayNumber,
+            Integer sequence,
+            UpdatePlanItemPlaceDto updateDto
+    ) {
+        Plan plan = planRepository.findById(planId)
+                .orElseThrow(() -> new CustomException(ErrorCode.PLAN_NOT_FOUND));
+
+        PlanItem planItem = plan.getPlanItems()
+                .stream()
+                .filter(item -> dayNumber.equals(item.getDayNumber()) && sequence.equals(item.getSequence()))
+                .findFirst()
+                .orElseThrow(() -> new CustomException(ErrorCode.PLAN_ITEM_NOT_FOUND));
+
+        planItem.updatePlace(
+                updateDto.getRegionName(),
+                updateDto.getRegionId(),
+                updateDto.getLatitude(),
+                updateDto.getLongitude()
+        );
+
+        return PlanItemResponseDto.from(planItem);
     }
 
     private void validateDateRange(SavePlanDto savePlanDto) {

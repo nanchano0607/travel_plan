@@ -23,7 +23,6 @@ public class AiPlanPromptBuilder {
                 - 종료일: %s
                 - 여행 일수: %d일
                 - 인원수: %d명
-                - 예산: %d원
 
                 [생성 규칙]
                 - 추천 장소는 지역 중심 좌표 주변의 실제 장소로 구성하세요.
@@ -42,7 +41,6 @@ public class AiPlanPromptBuilder {
                 requestDto.getEndDate(),
                 tripDays,
                 requestDto.getHeadcount(),
-                requestDto.getBudget(),
                 tripDays
         );
     }

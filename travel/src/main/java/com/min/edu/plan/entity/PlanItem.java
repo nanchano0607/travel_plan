@@ -64,4 +64,11 @@ public class PlanItem {
         this.latitude = latitude;
         this.longitude = longitude;
     }
+
+    public void updatePlace(String placeName, String placeId, BigDecimal latitude, BigDecimal longitude) {
+        this.placeName = placeName;
+        this.placeId = placeId;
+        this.latitude = latitude;
+        this.longitude = longitude;
+    }
 }
