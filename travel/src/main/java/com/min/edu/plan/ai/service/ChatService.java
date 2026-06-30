@@ -1,5 +1,6 @@
 package com.min.edu.plan.ai.service;
 
+import java.math.BigDecimal;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
@@ -17,26 +18,35 @@ import com.min.edu.plan.ai.prompt.AiPlanPromptBuilder;
 import com.min.edu.plan.dto.SavePlanDto;
 import com.min.edu.plan.dto.SavePlanItemDto;
 import com.min.edu.plan.dto.SavePlanResponseDto;
+import com.min.edu.plan.place.PlaceValidationService;
+import com.min.edu.plan.place.ValidatedPlace;
 import com.min.edu.plan.service.PlanService;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ChatService {
 
     private static final Long TEMP_USER_ID = 1L;
-    private static final int MAX_TRIP_DAYS = 7; //ai응답 텍스트를 고려하여 최대 7일이라는 제한을 둠.
+    private static final int MAX_TRIP_DAYS = 7; // ai응답 텍스트를 고려하여 최대 7일이라는 제한을 둠.
 
     private final AssistantAi assistantAi;
     private final ObjectMapper objectMapper;
     private final AiPlanPromptBuilder aiPlanPromptBuilder;
     private final PlanService planService;
+    private final PlaceValidationService placeValidationService;
 
     public SavePlanResponseDto createPlan(PlanRequestDto requestDto) {
+        log.info("AI plan request started. regionName={}, regionId={}, startDate={}, endDate={}",
+                requestDto.getRegionName(), requestDto.getRegionId(), requestDto.getStartDate(), requestDto.getEndDate());
         validatePlanRequest(requestDto);
         String prompt = aiPlanPromptBuilder.build(requestDto);
         List<AiPlanItemResponseDto> aiPlanItems = requestAiPlanItems(prompt);
+        log.info("AI returned {} plan items.", aiPlanItems.size());
+        validateAiPlanItems(requestDto, aiPlanItems);
         SavePlanDto savePlanDto = createSavePlanDto(requestDto, aiPlanItems);
 
         return planService.savePlan(savePlanDto);
@@ -55,43 +65,96 @@ public class ChatService {
     }
 
     private List<AiPlanItemResponseDto> requestAiPlanItems(String prompt) {
-        String response = assistantAi.chat(prompt);
+        String response;
+        try {
+            response = assistantAi.chat(prompt);
+        } catch (RuntimeException e) {
+            log.warn("AI call failed.", e);
+            throw new CustomException(ErrorCode.AI_CALL_FAILED);
+        }
+
         String jsonResponse = removeMarkdownCodeBlock(response);
         try {
             return objectMapper.readValue(jsonResponse, new TypeReference<List<AiPlanItemResponseDto>>() {
             });
         } catch (JsonProcessingException e) {
+            log.warn("AI response parse failed. response={}", jsonResponse, e);
             throw new CustomException(ErrorCode.AI_RESPONSE_PARSE_FAILED);
         }
     }
 
+    private void validateAiPlanItems(PlanRequestDto requestDto, List<AiPlanItemResponseDto> aiPlanItems) {
+        if (aiPlanItems == null || aiPlanItems.isEmpty()) {
+            throw new CustomException(ErrorCode.AI_RESPONSE_SCHEMA_INVALID);
+        }
+
+        long tripDays = ChronoUnit.DAYS.between(requestDto.getStartDate(), requestDto.getEndDate()) + 1;
+
+        for (AiPlanItemResponseDto item : aiPlanItems) {
+            log.info("Validating AI item schema. dayNumber={}, sequence={}, placeName={}, latitude={}, longitude={}",
+                    item.getDayNumber(), item.getSequence(), item.getPlaceName(), item.getLatitude(), item.getLongitude());
+
+            if (item.getDayNumber() == null
+                    || item.getSequence() == null
+                    || item.getPlaceName() == null
+                    || item.getPlaceName().isBlank()
+                    || item.getLatitude() == null
+                    || item.getLongitude() == null) {
+                throw new CustomException(ErrorCode.AI_RESPONSE_SCHEMA_INVALID);
+            }
+
+            if (item.getDayNumber() < 1 || item.getDayNumber() > tripDays) {
+                throw new CustomException(ErrorCode.AI_RESPONSE_SCHEMA_INVALID);
+            }
+
+            if (item.getSequence() < 1) {
+                throw new CustomException(ErrorCode.AI_RESPONSE_SCHEMA_INVALID);
+            }
+
+            if (!isBetween(item.getLatitude(), "-90.0", "90.0")
+                    || !isBetween(item.getLongitude(), "-180.0", "180.0")) {
+                throw new CustomException(ErrorCode.AI_RESPONSE_SCHEMA_INVALID);
+            }
+        }
+    }
+
+    private boolean isBetween(BigDecimal value, String min, String max) {
+        return value.compareTo(new BigDecimal(min)) >= 0
+                && value.compareTo(new BigDecimal(max)) <= 0;
+    }
+
     private SavePlanDto createSavePlanDto(PlanRequestDto requestDto, List<AiPlanItemResponseDto> aiPlanItems) {
         List<SavePlanItemDto> planItems = aiPlanItems.stream()
-                .map(this::createSavePlanItemDto)
+                .map(aiPlanItem -> createSavePlanItemDto(requestDto, aiPlanItem))
                 .toList();
 
         return new SavePlanDto(
                 TEMP_USER_ID,
                 requestDto.getRegionName() + " 여행",
                 requestDto.getRegionName(),
-                null,
+                requestDto.getRegionId(),
                 requestDto.getBudget(),
                 requestDto.getHeadcount(),
                 requestDto.getStartDate(),
                 requestDto.getEndDate(),
-                planItems
-        );
+                planItems);
     }
 
-    private SavePlanItemDto createSavePlanItemDto(AiPlanItemResponseDto aiPlanItem) {
+    private SavePlanItemDto createSavePlanItemDto(PlanRequestDto requestDto, AiPlanItemResponseDto aiPlanItem) {
+        log.info("Correcting AI place with Google Places. placeName={}, aiLatitude={}, aiLongitude={}",
+                aiPlanItem.getPlaceName(), aiPlanItem.getLatitude(), aiPlanItem.getLongitude());
+        ValidatedPlace validatedPlace = placeValidationService.validateAndCorrect(requestDto, aiPlanItem);
+        log.info("Google place validation succeeded. aiPlaceName={}, googlePlaceName={}, placeId={}, latitude={}, longitude={}",
+                aiPlanItem.getPlaceName(), validatedPlace.getPlaceName(), validatedPlace.getPlaceId(),
+                validatedPlace.getLatitude(), validatedPlace.getLongitude());
+
         return new SavePlanItemDto(
-                aiPlanItem.getPlaceName(),
+                validatedPlace.getPlaceName(),
                 aiPlanItem.getDayNumber(),
                 aiPlanItem.getSequence(),
-                aiPlanItem.getPlaceId(),
-                aiPlanItem.getLatitude(),
-                aiPlanItem.getLongitude()
-        );
+                validatedPlace.getPlaceId(),
+                validatedPlace.getLatitude(),
+                validatedPlace.getLongitude());
     }
 
     private String removeMarkdownCodeBlock(String response) {
