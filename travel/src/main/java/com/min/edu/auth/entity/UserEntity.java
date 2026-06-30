@@ -63,4 +63,16 @@ public class UserEntity {
         this.role = role != null ? role : Role.USER;
         this.userImage = userImage;
     }
+
+    public void updateProfile(String name, String nickname, String phone) {
+        if (name != null) {
+            this.name = name;
+        }
+        if (nickname != null) {
+            this.nickname = nickname;
+        }
+        if (phone != null) {
+            this.phone = phone;
+        }
+    }
 }

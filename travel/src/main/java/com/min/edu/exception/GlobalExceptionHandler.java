@@ -3,6 +3,7 @@ package com.min.edu.exception;
 import com.min.edu.common.response.ApiResponse;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -46,5 +47,14 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .badRequest()
                 .body(ApiResponse.fail("PLAN_INVALID_REQUEST", exception.getMessage()));
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiResponse<Void>> handleHttpMessageNotReadableException(
+            HttpMessageNotReadableException exception
+    ) {
+        return ResponseEntity
+                .badRequest()
+                .body(ApiResponse.fail("INVALID_REQUEST_BODY", "요청 본문을 읽을 수 없습니다. JSON 형식을 확인해주세요."));
     }
 }
