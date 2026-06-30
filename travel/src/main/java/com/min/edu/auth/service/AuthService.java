@@ -8,6 +8,7 @@ import com.min.edu.auth.dto.UpdateProfileRequest;
 import com.min.edu.auth.dto.UpdateProfileResponse;
 import com.min.edu.auth.entity.LocalAuth;
 import com.min.edu.auth.entity.UserEntity;
+import com.min.edu.security.jwt.JwtTokenProvider;
 import com.min.edu.auth.repository.LocalAuthRepository;
 import com.min.edu.auth.repository.UserRepository;
 import com.min.edu.exception.CustomException;
@@ -22,9 +23,12 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional
 public class AuthService {
+
     private final UserRepository userRepository;
     private final LocalAuthRepository localAuthRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtTokenProvider jwtTokenProvider;
+
     public SignupResponse signup(SignupRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new CustomException(ErrorCode.DUPLICATE_EMAIL);
@@ -32,6 +36,7 @@ public class AuthService {
         if (userRepository.existsByNickname(request.getNickname())) {
             throw new CustomException(ErrorCode.DUPLICATE_NICKNAME);
         }
+
         UserEntity user = UserEntity.builder()
                 .email(request.getEmail())
                 .provider("local")
@@ -39,11 +44,13 @@ public class AuthService {
                 .nickname(request.getNickname())
                 .phone(request.getPhone())
                 .build();
+
         userRepository.save(user);
         LocalAuth localAuth = new LocalAuth();
         localAuth.setUserId(user.getUserId());
         localAuth.setPassword(passwordEncoder.encode(request.getPassword()));
         localAuthRepository.save(localAuth);
+
         return SignupResponse.builder()
                 .userId(user.getUserId())
                 .email(user.getEmail())
@@ -64,12 +71,19 @@ public class AuthService {
             throw new CustomException(ErrorCode.INVALID_CREDENTIALS);
         }
 
+        String accessToken = jwtTokenProvider.createAccessToken(
+                user.getUserId(),
+                user.getEmail(),
+                user.getRole()
+        );
+
         return LoginResponse.builder()
                 .userId(user.getUserId())
                 .email(user.getEmail())
                 .name(user.getName())
                 .nickname(user.getNickname())
                 .role(user.getRole())
+                .accessToken(accessToken)
                 .build();
     }
 
