@@ -8,7 +8,6 @@ import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -48,8 +47,4 @@ public class PlanRequestDto {
     @NotNull(message = "인원은 필수입니다.")
     @Min(value = 1, message = "인원은 1명 이상이어야 합니다.")
     private Integer headcount;
-
-    @NotNull(message = "예산은 필수입니다.")
-    @PositiveOrZero(message = "예산은 0 이상이어야 합니다.")
-    private Integer budget;
 }

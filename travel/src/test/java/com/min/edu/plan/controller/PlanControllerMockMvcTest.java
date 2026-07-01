@@ -25,9 +25,14 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.min.edu.exception.GlobalExceptionHandler;
+import com.min.edu.plan.ai.dto.AiPlanInsightItemResponseDto;
+import com.min.edu.plan.ai.dto.AiPlanInsightResponseDto;
+import com.min.edu.plan.ai.dto.RetryPlanRequestDto;
+import com.min.edu.plan.ai.service.ChatService;
 import com.min.edu.plan.dto.SavePlanDto;
 import com.min.edu.plan.dto.SavePlanResponseDto;
 import com.min.edu.plan.service.PlanService;
+import com.min.edu.security.jwt.JwtTokenProvider;
 
 @WebMvcTest(controllers = PlanController.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -39,6 +44,12 @@ class PlanControllerMockMvcTest {
 
     @MockitoBean
     private PlanService planService;
+
+    @MockitoBean
+    private ChatService chatService;
+
+    @MockitoBean
+    private JwtTokenProvider jwtTokenProvider;
 
     @Test
     @DisplayName("여행 계획 저장 요청 성공")
@@ -211,6 +222,113 @@ class PlanControllerMockMvcTest {
                 .andExpect(jsonPath("$.data").doesNotExist());
 
         verify(planService, never()).savePlan(any(SavePlanDto.class));
+    }
+
+    @Test
+    @DisplayName("AI 여행 계획 초안 재생성 요청 성공")
+    void retryAiPlanDraft_success() throws Exception {
+        SavePlanDto response = new SavePlanDto(
+                1L,
+                "서울 여행",
+                "서울",
+                "seoul-region-id",
+                0,
+                2,
+                LocalDate.of(2026, 7, 10),
+                LocalDate.of(2026, 7, 12),
+                Collections.emptyList()
+        );
+
+        given(chatService.retryPlanDraft(any(RetryPlanRequestDto.class))).willReturn(response);
+
+        mockMvc.perform(post("/api/plan/ai/retry")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "condition": {
+                                    "regionName": "서울",
+                                    "regionId": "seoul-region-id",
+                                    "latitude": 37.5665,
+                                    "longitude": 126.9780,
+                                    "headcount": 2,
+                                    "startDate": "2026-07-10",
+                                    "endDate": "2026-07-12"
+                                  },
+                                  "previousPlanItems": [
+                                    {
+                                      "placeName": "경복궁",
+                                      "dayNumber": 1,
+                                      "sequence": 1,
+                                      "placeId": "gyeongbokgung-place-id",
+                                      "latitude": 37.579617,
+                                      "longitude": 126.977041
+                                    }
+                                  ]
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.code").value("OK"))
+                .andExpect(jsonPath("$.data.userId").value(1))
+                .andExpect(jsonPath("$.data.title").value("서울 여행"))
+                .andExpect(jsonPath("$.data.regionName").value("서울"));
+
+        verify(chatService).retryPlanDraft(any(RetryPlanRequestDto.class));
+    }
+
+    @Test
+    @DisplayName("AI 여행 계획 비용/한줄평 분석 요청 성공")
+    void createAiPlanInsight_success() throws Exception {
+        AiPlanInsightItemResponseDto item = new AiPlanInsightItemResponseDto();
+        item.setDayNumber(1);
+        item.setSequence(1);
+        item.setPlaceName("경복궁");
+        item.setOneLineReview("고궁 산책과 사진 촬영에 좋아요.");
+        item.setEstimatedCost(3000);
+
+        AiPlanInsightResponseDto response = new AiPlanInsightResponseDto();
+        response.setCurrency("KRW");
+        response.setBudgetComment("입장료와 지역 이동비 중심의 예상 금액입니다.");
+        response.setAssumptions(List.of("항공권과 숙박비는 제외했습니다."));
+        response.setItems(List.of(item));
+
+        given(chatService.createPlanInsight(any(SavePlanDto.class))).willReturn(response);
+
+        mockMvc.perform(post("/api/plan/ai/insight")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "userId": 1,
+                                  "title": "서울 여행",
+                                  "regionName": "서울",
+                                  "regionId": "seoul-region-id",
+                                  "budget": 300000,
+                                  "headcount": 2,
+                                  "startDate": "2026-07-10",
+                                  "endDate": "2026-07-12",
+                                  "planItems": [
+                                    {
+                                      "placeName": "경복궁",
+                                      "dayNumber": 1,
+                                      "sequence": 1,
+                                      "placeId": "gyeongbokgung-place-id",
+                                      "latitude": 37.579617,
+                                      "longitude": 126.977041
+                                    }
+                                  ]
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.code").value("OK"))
+                .andExpect(jsonPath("$.data.currency").value("KRW"))
+                .andExpect(jsonPath("$.data.items[0].dayNumber").value(1))
+                .andExpect(jsonPath("$.data.items[0].sequence").value(1))
+                .andExpect(jsonPath("$.data.items[0].placeName").value("경복궁"))
+                .andExpect(jsonPath("$.data.items[0].oneLineReview").value("고궁 산책과 사진 촬영에 좋아요."))
+                .andExpect(jsonPath("$.data.items[0].estimatedCost").value(3000));
+
+        verify(chatService).createPlanInsight(any(SavePlanDto.class));
     }
 
     @Test

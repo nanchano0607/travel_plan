@@ -18,7 +18,7 @@ public class ImageEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "imaged_id")
+    @Column(name = "image_id")
     private Long imageId;
 
     @Column(name = "file_path", nullable = false)
@@ -32,6 +32,11 @@ public class ImageEntity {
 
     @Column(name = "image_size")
     private Long imageSize;
+
+    // 추가: 게시글과의 연관관계
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "post_id")
+    private PostEntity post;
 
     @PrePersist
     public void prePersist() {

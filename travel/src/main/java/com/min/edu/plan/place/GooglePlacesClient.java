@@ -3,7 +3,6 @@ package com.min.edu.plan.place;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -24,6 +23,8 @@ public class GooglePlacesClient {
             "places.location",
             "places.types"
     );
+    private static final int SEARCH_PAGE_SIZE = 5;
+    private static final double SEARCH_RADIUS_METERS = 50000.0;
 
     private final RestClient restClient;
     private final String apiKey;
@@ -35,7 +36,7 @@ public class GooglePlacesClient {
                 .build();
     }
 
-    public Optional<GooglePlaceSearchResult> searchPlace(
+    public List<GooglePlaceSearchResult> searchPlaces(
             String regionName,
             String placeName,
             BigDecimal latitude,
@@ -44,20 +45,20 @@ public class GooglePlacesClient {
         Map<String, Object> requestBody = Map.of(
                 "textQuery", regionName + " " + placeName,
                 "languageCode", "ko",
-                "pageSize", 1,
+                "pageSize", SEARCH_PAGE_SIZE,
                 "locationBias", Map.of(
                         "circle", Map.of(
                                 "center", Map.of(
                                         "latitude", latitude,
                                         "longitude", longitude
                                 ),
-                                "radius", 50000.0
+                                "radius", SEARCH_RADIUS_METERS
                         )
                 )
         );
 
-        log.info("Google Places text search request. textQuery={}, latitude={}, longitude={}, radiusMeters={}",
-                regionName + " " + placeName, latitude, longitude, 50000);
+        log.info("Google Places text search request. textQuery={}, latitude={}, longitude={}, radiusMeters={}, pageSize={}",
+                regionName + " " + placeName, latitude, longitude, Math.round(SEARCH_RADIUS_METERS), SEARCH_PAGE_SIZE);
 
         GooglePlacesTextSearchResponse response;
         try {
@@ -80,32 +81,48 @@ public class GooglePlacesClient {
 
         if (response == null || response.getPlaces() == null || response.getPlaces().isEmpty()) {
             log.warn("Google Places text search returned no places. regionName={}, placeName={}", regionName, placeName);
-            return Optional.empty();
+            return List.of();
         }
 
-        GooglePlacesTextSearchResponse.GooglePlace place = response.getPlaces().get(0);
+        List<GooglePlaceSearchResult> candidates = response.getPlaces().stream()
+                .filter(this::hasRequiredFields)
+                .map(place -> new GooglePlaceSearchResult(
+                        place.getId(),
+                        place.getDisplayName().getText(),
+                        place.getFormattedAddress(),
+                        place.getLocation().getLatitude(),
+                        place.getLocation().getLongitude(),
+                        place.getTypes() == null ? List.of() : place.getTypes()
+                ))
+                .toList();
 
-        if (place.getId() == null || place.getDisplayName() == null || place.getLocation() == null) {
+        log.info("Google Places text search returned candidates. requestedPlaceName={}, candidateCount={}",
+                placeName, candidates.size());
+        candidates.forEach(candidate -> log.info(
+                "Google Places text search candidate. requestedPlaceName={}, googlePlaceName={}, placeId={}, latitude={}, longitude={}, types={}",
+                placeName,
+                candidate.getDisplayName(),
+                candidate.getPlaceId(),
+                candidate.getLatitude(),
+                candidate.getLongitude(),
+                candidate.getTypes()));
+
+        return candidates;
+    }
+
+    private boolean hasRequiredFields(GooglePlacesTextSearchResponse.GooglePlace place) {
+        boolean hasRequiredFields = place.getId() != null
+                && place.getDisplayName() != null
+                && place.getDisplayName().getText() != null
+                && place.getLocation() != null
+                && place.getLocation().getLatitude() != null
+                && place.getLocation().getLongitude() != null;
+
+        if (!hasRequiredFields) {
             log.warn("Google Places result is missing required fields. id={}, displayNameExists={}, locationExists={}",
                     place.getId(), place.getDisplayName() != null, place.getLocation() != null);
-            return Optional.empty();
         }
 
-        log.info("Google Places text search selected result. requestedPlaceName={}, googlePlaceName={}, placeId={}, latitude={}, longitude={}, types={}",
-                placeName,
-                place.getDisplayName().getText(),
-                place.getId(),
-                place.getLocation().getLatitude(),
-                place.getLocation().getLongitude(),
-                place.getTypes());
-
-        return Optional.of(new GooglePlaceSearchResult(
-                place.getId(),
-                place.getDisplayName().getText(),
-                place.getFormattedAddress(),
-                place.getLocation().getLatitude(),
-                place.getLocation().getLongitude(),
-                place.getTypes() == null ? List.of() : place.getTypes()
-        ));
+        return hasRequiredFields;
     }
 }
