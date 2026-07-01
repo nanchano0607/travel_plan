@@ -50,13 +50,7 @@ public class PostServiceTest {
         assertThat(postRepository.findAll().get(0).getTitle()).isEqualTo("테스트 제목");
     }
 
-    @Test
-    void BCrypt_비밀번호_생성() {
-        org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder encoder
-                = new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder();
-        String encoded = encoder.encode("Abcd1234!@");
-        System.out.println("암호화된 비밀번호: " + encoded);
-    }
+
 
 
 }
