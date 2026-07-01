@@ -6,5 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface ImageRepository extends JpaRepository<ImageEntity, Long> {
-    List<ImageEntity> findByBoard_Id(Long boardId); // BoardEntity의 PK 필드명에 맞게 수정
+    List<ImageEntity> findByPost_Id(Long postId);
 }

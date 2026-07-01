@@ -15,13 +15,17 @@ public class PostDto {
     private Long userId;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private Long planId;      // 추가
+    private int likeCount;    // 추가
 
-    public PostDto(PostEntity board) {
-        this.id = board.getId();
-        this.title = board.getTitle();
-        this.content = board.getContent();
-        this.userId = board.getUserId();
-        this.createdAt = board.getCreatedAt();
-        this.updatedAt = board.getUpdatedAt();
+    public PostDto(PostEntity post) {
+        this.id = post.getId();
+        this.title = post.getTitle();
+        this.content = post.getContent();
+        this.userId = post.getUserId();
+        this.createdAt = post.getCreatedAt();
+        this.updatedAt = post.getUpdatedAt();
+        this.planId = post.getPlanId();       // 추가
+        this.likeCount = post.getLikeCount(); // 추가
     }
 }

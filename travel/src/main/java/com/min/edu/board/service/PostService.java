@@ -26,6 +26,7 @@ public class PostService {
                 .title(dto.getTitle())
                 .content(dto.getContent())
                 .userId(dto.getUserId())
+                .planId(dto.getPlanId()) // 추가
                 .build();
         PostEntity savedBoard = postRepository.save(board);
         return new PostDto(savedBoard);
