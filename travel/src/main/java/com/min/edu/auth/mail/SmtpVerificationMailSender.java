@@ -40,4 +40,22 @@ public class SmtpVerificationMailSender implements VerificationMailSender {
             throw new IllegalStateException("이메일 발송에 실패했습니다.", e);
         }
     }
+
+    @Override
+    public void sendPasswordResetLink(String email, String rawToken) {
+        try {
+            String resetLink = "http://localhost:5173/reset-password?token=" + rawToken;
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, "UTF-8");
+            helper.setFrom(fromAddress);
+            helper.setTo(email);
+            helper.setSubject("[Travel] 비밀번호 재설정 링크");
+            helper.setText("아래 링크를 클릭해 비밀번호를 재설정하세요.\n" + resetLink
+                    + "\n\n링크는 30분간 유효합니다.", false);
+            mailSender.send(message);
+        } catch (MessagingException e) {
+            log.error("비밀번호 재설정 메일 발송 실패: {}", email, e);
+            throw new IllegalStateException("이메일 발송에 실패했습니다.", e);
+        }
+    }
 }

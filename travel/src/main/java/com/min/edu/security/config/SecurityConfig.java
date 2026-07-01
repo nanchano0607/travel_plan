@@ -1,5 +1,8 @@
 package com.min.edu.security.config;
 
+import com.min.edu.auth.oauth.CustomOAuth2UserService;
+import com.min.edu.auth.oauth.OAuth2FailureHandler;
+import com.min.edu.auth.oauth.OAuth2SuccessHandler;
 import com.min.edu.security.jwt.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 
@@ -24,24 +27,14 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final CustomOAuth2UserService customOAuth2UserService;
+    private final OAuth2SuccessHandler oAuth2SuccessHandler;
+    private final OAuth2FailureHandler oAuth2FailureHandler;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .csrf(csrf -> csrf.disable())
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/signup", "/api/auth/login",  "/api/plan/**","/posts/**","/api/comment/**").permitAll()
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/error").permitAll()
-                        .anyRequest().authenticated())
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-        return http.build();
+        return new BCryptPasswordEncoder();
     }
 
     @Bean
@@ -56,4 +49,52 @@ public class SecurityConfig {
         source.registerCorsConfiguration("/**", config);
         return source;
     }
+    
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .csrf(csrf -> csrf.disable())
+                // OAuth2 flow는 state 검증에 세션이 필요하므로 IF_REQUIRED 사용
+                // JWT API 요청은 JwtAuthenticationFilter가 처리하므로 세션 영향 없음
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                )
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(
+                                "/api/auth/signup",
+                                "/api/auth/login",
+                                "/oauth2/**",
+                                "/login/oauth2/code/**",
+                                "/api/auth/email-verifications",
+                                "/api/auth/email-verifications/confirm",
+                                "/api/auth/password-reset/request",
+                                "/api/auth/password-reset/confirm",
+                                "/api/plan/**",
+                                "/posts/**",
+                                "/api/comment/**"
+                        ).permitAll()
+                        .requestMatchers(
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/error"
+                        ).permitAll()
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        // .requestMatchers("/api/plan/**").hasAnyRole("ADMIN", "USER") -> 회원가입 없이 여행계획 짤 수 있게 할건가요??
+                        .anyRequest().authenticated()
+                )
+                .oauth2Login(oauth2 -> oauth2
+                        .userInfoEndpoint(userInfo ->
+                                userInfo.userService(customOAuth2UserService)
+                        )
+                        .successHandler(oAuth2SuccessHandler)
+                        .failureHandler(oAuth2FailureHandler)
+                )
+                .addFilterBefore(
+                        jwtAuthenticationFilter,
+                        UsernamePasswordAuthenticationFilter.class
+                );
+        return http.build();
+    }
+
 }

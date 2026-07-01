@@ -10,12 +10,14 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "user_auth")
 @Getter
 @EqualsAndHashCode(of = "userId")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class UserEntity {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "user_id")
@@ -24,9 +26,10 @@ public class UserEntity {
     @Column(nullable = false, unique = true, length = 255)
     private String email;
 
-    // local, google, kakao, naver 최초 가입 경로
+    // 최초 가입 경로 (LOCAL, GOOGLE, KAKAO, NAVER)
+    @Enumerated(EnumType.STRING)
     @Column(length = 50)
-    private String provider;
+    private AuthProvider provider;
 
     @Column(nullable = false, length = 100)
     private String name;
@@ -53,8 +56,15 @@ public class UserEntity {
     private Long userImage;
 
     @Builder
-    private UserEntity(String email, String provider, String name, String nickname,
-                        String phone, Role role, Long userImage) {
+    private UserEntity(
+            String email,
+            AuthProvider provider,
+            String name,
+            String nickname,
+            String phone,
+            Role role,
+            Long userImage
+    ) {
         this.email = email;
         this.provider = provider;
         this.name = name;
@@ -74,5 +84,12 @@ public class UserEntity {
         if (phone != null) {
             this.phone = phone;
         }
+    }
+
+    public void changeRole(Role role) {
+        if (role == null) {
+            throw new IllegalArgumentException("권한은 null일 수 없습니다");
+        }
+        this.role = role;
     }
 }

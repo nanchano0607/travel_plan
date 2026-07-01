@@ -34,6 +34,7 @@ public class LoginController {
     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "이메일 또는 비밀번호 불일치")
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request) {
+
         LoginResponse response = authService.login(request);
 
         return ResponseEntity.ok(ApiResponse.success(response));

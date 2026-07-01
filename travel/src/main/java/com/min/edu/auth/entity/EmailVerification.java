@@ -49,12 +49,14 @@ public class EmailVerification {
 
     public static EmailVerification issue(String email, String codeHash, LocalDateTime expiresAt, LocalDateTime now) {
         EmailVerification verification = new EmailVerification();
+
         verification.email = email;
         verification.codeHash = codeHash;
         verification.expiresAt = expiresAt;
         verification.lastSentAt = now;
         verification.windowStartedAt = now;
         verification.resendCount = 1;
+
         return verification;
     }
 

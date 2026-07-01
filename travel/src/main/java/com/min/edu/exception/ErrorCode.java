@@ -11,8 +11,9 @@ public enum ErrorCode {
     DUPLICATE_NICKNAME(HttpStatus.CONFLICT, "이미 사용중인 닉네임입니다."),
     INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "이메일 또는 비밀번호가 일치하지 않습니다."),
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 사용자입니다."),
+    ACCOUNT_LOCKED(HttpStatus.LOCKED, "로그인 실패 횟수를 초과하여 계정이 잠겼습니다."),
 
-    // REQ-AUTH-06 이메일 인증: 만료는 410(GONE)으로 구분하고, 재발송 제한은 표준 rate-limit 규약인 429로 응답
+    // 이메일 인증: 만료는 410(GONE)으로 구분하고, 재발송 제한은 표준 rate-limit 규약인 429로 응답
     ACCOUNT_NOT_VERIFIED(HttpStatus.FORBIDDEN, "이메일 인증이 완료되지 않은 계정입니다."),
     // 이메일 인증이 회원가입보다 선행되어야 함(인증 미완료 상태로 가입 제출 시)
     EMAIL_NOT_VERIFIED(HttpStatus.BAD_REQUEST, "이메일 인증을 먼저 완료해주세요."),
@@ -43,7 +44,24 @@ public enum ErrorCode {
     ALREADY_LIKED(HttpStatus.CONFLICT, "이미 좋아요를 눌렀습니다."),
     LIKE_NOT_FOUND(HttpStatus.NOT_FOUND, "좋아요를 취소했습니다."),
 
-    IMAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "이미지를 찾을 수 없습니다.")
+    IMAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "이미지를 찾을 수 없습니다."),
+
+    // 소셜 인증 실패 처리
+    OAUTH_UNSUPPORTED_PROVIDER(HttpStatus.BAD_REQUEST, "지원하지 않는 소셜 로그인 제공자입니다."),
+    OAUTH_STATE_MISMATCH(HttpStatus.BAD_REQUEST, "유효하지 않은 state 값입니다."),
+    OAUTH_CODE_EXCHANGE_FAILED(HttpStatus.BAD_GATEWAY, "인가 코드 교환에 실패했습니다."),
+    OAUTH_PROVIDER_ERROR(HttpStatus.SERVICE_UNAVAILABLE, "소셜 서비스와의 통신에 실패했습니다."),
+    OAUTH_CANCELLED(HttpStatus.BAD_REQUEST, "소셜 로그인이 취소되었습니다."),
+
+    // 소셜 계정 연결
+    SOCIAL_ALREADY_LINKED(HttpStatus.CONFLICT, "이미 다른 계정에 연결된 소셜 계정입니다."),
+    SOCIAL_EMAIL_CONFLICT(HttpStatus.CONFLICT, "해당 이메일로 이미 가입된 계정이 있습니다. 기존 계정으로 로그인 후 소셜 계정을 연결해주세요."),
+    SOCIAL_NOT_LINKED(HttpStatus.NOT_FOUND, "연결된 소셜 계정을 찾을 수 없습니다."),
+
+    // 비밀번호 재설정
+    PASSWORD_RESET_TOKEN_INVALID(HttpStatus.BAD_REQUEST, "유효하지 않은 재설정 토큰입니다."),
+    PASSWORD_RESET_TOKEN_EXPIRED(HttpStatus.GONE, "만료된 재설정 토큰입니다. 다시 요청해주세요."),
+    PASSWORD_RESET_TOKEN_ALREADY_USED(HttpStatus.BAD_REQUEST, "이미 사용된 재설정 토큰입니다.")
     ;
 
     private final HttpStatus status;

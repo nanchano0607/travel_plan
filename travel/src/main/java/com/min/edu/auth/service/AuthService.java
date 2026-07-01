@@ -6,6 +6,7 @@ import com.min.edu.auth.dto.SignupRequest;
 import com.min.edu.auth.dto.SignupResponse;
 import com.min.edu.auth.dto.UpdateProfileRequest;
 import com.min.edu.auth.dto.UpdateProfileResponse;
+import com.min.edu.auth.entity.AuthProvider;
 import com.min.edu.auth.entity.EmailVerification;
 import com.min.edu.auth.entity.LocalAuth;
 import com.min.edu.auth.entity.LocalAuthStatus;
@@ -47,11 +48,12 @@ public class AuthService {
 
         UserEntity user = UserEntity.builder()
                 .email(request.getEmail())
-                .provider("local")
+                .provider(AuthProvider.LOCAL)
                 .name(request.getName())
                 .nickname(request.getNickname())
                 .phone(request.getPhone())
                 .build();
+
         userRepository.save(user);
         LocalAuth localAuth = new LocalAuth();
         localAuth.setUserId(user.getUserId());
@@ -70,7 +72,7 @@ public class AuthService {
                 .build();
     }
 
-    @Transactional(readOnly = true)
+    @Transactional(noRollbackFor = CustomException.class)
     public LoginResponse login(LoginRequest request) {
         UserEntity user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new CustomException(ErrorCode.INVALID_CREDENTIALS));
@@ -78,7 +80,20 @@ public class AuthService {
         LocalAuth localAuth = localAuthRepository.findById(user.getUserId())
                 .orElseThrow(() -> new CustomException(ErrorCode.INVALID_CREDENTIALS));
 
+        if (localAuth.isLoginLocked()) {
+            throw new CustomException(ErrorCode.ACCOUNT_LOCKED);
+        }
+
+        if (localAuth.isLoginLockExpired()) {
+            localAuth.resetLoginFailure();
+        }
+
         if (!passwordEncoder.matches(request.getPassword(), localAuth.getPassword())) {
+            localAuth.increaseFailedLoginCount();
+            if (localAuth.getFailedLoginCount() >= 5) {
+                localAuth.lockLogin();
+                throw new CustomException(ErrorCode.ACCOUNT_LOCKED);
+            }
             throw new CustomException(ErrorCode.INVALID_CREDENTIALS);
         }
 
@@ -86,6 +101,8 @@ public class AuthService {
         if (localAuth.getStatus() != LocalAuthStatus.ACTIVE) {
             throw new CustomException(ErrorCode.ACCOUNT_NOT_VERIFIED);
         }
+
+        localAuth.resetLoginFailure();
 
         String accessToken = jwtTokenProvider.createAccessToken(
                 user.getUserId(),
