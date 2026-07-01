@@ -85,4 +85,11 @@ public class UserEntity {
             this.phone = phone;
         }
     }
+
+    public void changeRole(Role role) {
+        if (role == null) {
+            throw new IllegalArgumentException("권한은 null일 수 없습니다");
+        }
+        this.role = role;
+    }
 }

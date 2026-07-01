@@ -5,6 +5,7 @@ import lombok.Getter;
 
 @Getter
 public class UpdateProfileRequest {
+
     private String name;
 
     @Size(min = 2, max = 100, message = "닉네임은 2~100자여야 합니다.")

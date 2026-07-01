@@ -11,6 +11,7 @@ public enum ErrorCode {
     DUPLICATE_NICKNAME(HttpStatus.CONFLICT, "이미 사용중인 닉네임입니다."),
     INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "이메일 또는 비밀번호가 일치하지 않습니다."),
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 사용자입니다."),
+    ACCOUNT_LOCKED(HttpStatus.LOCKED, "로그인 실패 횟수를 초과하여 계정이 잠겼습니다."),
 
     // 이메일 인증: 만료는 410(GONE)으로 구분하고, 재발송 제한은 표준 rate-limit 규약인 429로 응답
     ACCOUNT_NOT_VERIFIED(HttpStatus.FORBIDDEN, "이메일 인증이 완료되지 않은 계정입니다."),

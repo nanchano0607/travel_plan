@@ -80,6 +80,8 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/error"
                         ).permitAll()
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        // .requestMatchers("/api/plan/**").hasAnyRole("ADMIN", "USER") -> 회원가입 없이 여행계획 짤 수 있게 할건가요??
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2 -> oauth2
