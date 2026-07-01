@@ -29,11 +29,25 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/signup", "/api/auth/login",  "/api/plan/**").permitAll()
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/error").permitAll()
+                        .requestMatchers("/api/auth/signup",
+                                         "/api/auth/login",
+                                         "/api/auth/email-verifications/**",
+                                         "/api/plan/**"
+                        ).permitAll()
+
+                        .requestMatchers("/swagger-ui/**",
+                                         "/v3/api-docs/**",
+                                         "/error"
+                        ).permitAll()
+
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
+                        // .requestMatchers("/api/plan/**").hasAnyRole("ADMIN", "USER") -> 회원가입 없이 여행계획 짤 수 있게 할건가요??
+
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
         return http.build();
     }
 }
