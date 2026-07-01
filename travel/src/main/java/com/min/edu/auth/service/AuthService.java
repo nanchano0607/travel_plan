@@ -6,6 +6,7 @@ import com.min.edu.auth.dto.SignupRequest;
 import com.min.edu.auth.dto.SignupResponse;
 import com.min.edu.auth.dto.UpdateProfileRequest;
 import com.min.edu.auth.dto.UpdateProfileResponse;
+import com.min.edu.auth.entity.AuthProvider;
 import com.min.edu.auth.entity.EmailVerification;
 import com.min.edu.auth.entity.LocalAuth;
 import com.min.edu.auth.entity.LocalAuthStatus;
@@ -47,7 +48,7 @@ public class AuthService {
 
         UserEntity user = UserEntity.builder()
                 .email(request.getEmail())
-                .provider("local")
+                .provider(AuthProvider.LOCAL)
                 .name(request.getName())
                 .nickname(request.getNickname())
                 .phone(request.getPhone())

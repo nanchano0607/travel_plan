@@ -57,10 +57,9 @@ public class AuthController {
     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "수정 성공")
     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "사용자 없음")
     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "닉네임 중복")
+    // /profile로 수정할 예정
     @PatchMapping("/me")
     public ResponseEntity<ApiResponse<UpdateProfileResponse>> updateProfile(
-            // TODO: JWT 도입 후 SecurityContext의 인증된 사용자 ID로 교체 (현재는 인가 체크 없음)
-            // 완료!
             Authentication authentication,
             @Valid @RequestBody UpdateProfileRequest request) {
         Long userId = (Long) authentication.getPrincipal();

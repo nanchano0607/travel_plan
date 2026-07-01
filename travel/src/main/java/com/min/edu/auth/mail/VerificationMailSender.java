@@ -9,4 +9,5 @@ package com.min.edu.auth.mail;
  */
 public interface VerificationMailSender {
     void sendVerificationCode(String email, String code);
+    void sendPasswordResetLink(String email, String rawToken);
 }
