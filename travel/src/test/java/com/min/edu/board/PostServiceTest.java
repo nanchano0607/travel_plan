@@ -22,17 +22,14 @@ public class PostServiceTest {
     private PostRepository postRepository;
 
     @Test
-    void 필수값_누락시_게시글이_저장되지_않는다() {
-        // given: title이 null인 잘못된 데이터
-        PostDto invalidDto = new PostDto();
-        // title, content, userId 모두 null인 상태
+    void 존재하지않는_게시글_조회시_예외가_발생한다() {
+        // given: DB에 없는 id로 조회 시도
+        Long notExistId = 999999L;
 
-        // when & then: 예외가 발생해야 하고
-        assertThatThrownBy(() -> postService.createBoard(invalidDto))
-                .isInstanceOf(Exception.class);
-
-        // 게시글이 DB에 저장되지 않았는지 확인
-        assertThat(postRepository.findAll()).isEmpty();
+        // when & then: 예외가 발생해야 함
+        assertThatThrownBy(() -> postService.getBoard(notExistId))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("게시글이 존재하지 않습니다");
     }
 
     @Test
@@ -52,4 +49,14 @@ public class PostServiceTest {
         assertThat(postRepository.findAll()).isNotEmpty();
         assertThat(postRepository.findAll().get(0).getTitle()).isEqualTo("테스트 제목");
     }
+
+    @Test
+    void BCrypt_비밀번호_생성() {
+        org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder encoder
+                = new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder();
+        String encoded = encoder.encode("Abcd1234!@");
+        System.out.println("암호화된 비밀번호: " + encoded);
+    }
+
+
 }

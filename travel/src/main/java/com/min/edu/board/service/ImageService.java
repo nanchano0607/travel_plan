@@ -26,13 +26,22 @@ public class ImageService {
     private String uploadDir;
 
     @Transactional
-    public ImageEntity uploadImage(Long boardId, MultipartFile file) throws IOException {
-        PostEntity post = postRepository.findById(boardId)
+    public ImageEntity uploadImage(Long postId, MultipartFile file) throws IOException {
+        PostEntity post = postRepository.findById(postId)
                 .orElseThrow(() -> new IllegalArgumentException("게시글이 존재하지 않습니다."));
 
         String originalFilename = file.getOriginalFilename();
         String savedFilename = UUID.randomUUID() + "_" + originalFilename;
-        String savePath = uploadDir + savedFilename;
+
+        // 프로젝트 루트 기준 절대경로로 변환
+        String absoluteUploadDir = System.getProperty("user.dir") + "/" + uploadDir;
+        String savePath = absoluteUploadDir + savedFilename;
+
+        // 폴더 없으면 자동 생성
+        File dir = new File(absoluteUploadDir);
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
 
         file.transferTo(new File(savePath));
 
