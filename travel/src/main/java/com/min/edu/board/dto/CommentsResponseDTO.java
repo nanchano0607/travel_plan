@@ -23,7 +23,7 @@ public class CommentsResponseDTO {
     public static CommentsResponseDTO fromEntity(CommentsEntity entity) {
         return CommentsResponseDTO.builder()
                 .commentId(entity.getCommentId())
-                .postId(entity.getCommentId())
+                .postId(entity.getPostId())
                 .userId(entity.getUserId())
                 .parentCommentId(entity.getParentCommentId())
                 .content(entity.getContent())

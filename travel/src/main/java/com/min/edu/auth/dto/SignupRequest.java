@@ -14,7 +14,7 @@ public class SignupRequest {
 
     @NotBlank(message = "비밀번호는 필수입니다.")
     @Pattern(
-            regexp = "^(?=.*[A-Z])(?=.*[a-z])(?=.*\\\\d)(?=.*[^A-Za-z0-9\\\\s])\\\\S{8,64}$",
+            regexp = "^(?=.*[A-Z])(?=.*[a-z])(?=.*\\d)(?=.*[^A-Za-z0-9\\s])\\S{8,64}$",
             message = "비밀번호는 8~64자이며, 대문자, 소문자, 숫자, 특수문자를 각각 1자 이상 포함하고 공백은 사용할 수 없습니다."
     )
     @Size(min = 8, max = 64)
