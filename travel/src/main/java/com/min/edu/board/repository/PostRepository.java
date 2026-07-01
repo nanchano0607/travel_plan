@@ -1,17 +1,17 @@
 package com.min.edu.board.repository;
 
-import com.min.edu.board.entity.BoardEntity;
+import com.min.edu.board.entity.PostEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface BoardRepository extends JpaRepository<BoardEntity, Long> {
+public interface PostRepository extends JpaRepository<PostEntity, Long> {
 
     // 제목 검색
-    Page<BoardEntity> findByTitleContaining(String title, Pageable pageable);
+    Page<PostEntity> findByTitleContaining(String title, Pageable pageable);
 
     // 작성자 검색
-    Page<BoardEntity> findByUserId(String userId, Pageable pageable);
+    Page<PostEntity> findByUserId(String userId, Pageable pageable);
 }
