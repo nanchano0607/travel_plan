@@ -45,6 +45,10 @@ public class PlanItem {
     @Column(precision = 11, scale = 8)
     private BigDecimal longitude;
 
+    private String oneLineReview;
+
+    private Integer estimatedCost;
+
     private LocalDateTime createdAt;
 
     @PrePersist
@@ -56,6 +60,12 @@ public class PlanItem {
 
     public PlanItem(Plan plan, String placeName, Integer dayNumber, Integer sequence, 
                     String placeId, BigDecimal latitude, BigDecimal longitude) {
+        this(plan, placeName, dayNumber, sequence, placeId, latitude, longitude, null, null);
+    }
+
+    public PlanItem(Plan plan, String placeName, Integer dayNumber, Integer sequence,
+                    String placeId, BigDecimal latitude, BigDecimal longitude,
+                    String oneLineReview, Integer estimatedCost) {
         this.plan = plan;
         this.placeName = placeName;
         this.dayNumber = dayNumber;
@@ -63,6 +73,8 @@ public class PlanItem {
         this.placeId = placeId;
         this.latitude = latitude;
         this.longitude = longitude;
+        this.oneLineReview = oneLineReview;
+        this.estimatedCost = estimatedCost;
     }
 
     public void updatePlace(String placeName, String placeId, BigDecimal latitude, BigDecimal longitude) {
@@ -70,5 +82,12 @@ public class PlanItem {
         this.placeId = placeId;
         this.latitude = latitude;
         this.longitude = longitude;
+        this.oneLineReview = null;
+        this.estimatedCost = null;
+    }
+
+    public void updateSchedule(Integer dayNumber, Integer sequence) {
+        this.dayNumber = dayNumber;
+        this.sequence = sequence;
     }
 }

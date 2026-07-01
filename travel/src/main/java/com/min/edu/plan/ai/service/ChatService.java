@@ -4,8 +4,10 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.math.BigDecimal;
 import java.time.temporal.ChronoUnit;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.springframework.stereotype.Service;
@@ -15,14 +17,22 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.min.edu.exception.CustomException;
 import com.min.edu.exception.ErrorCode;
+import com.min.edu.plan.ai.dto.AiPlanInsightItemResponseDto;
+import com.min.edu.plan.ai.dto.AiPlanInsightResponseDto;
 import com.min.edu.plan.ai.dto.AiPlanItemResponseDto;
 import com.min.edu.plan.ai.dto.PlanRequestDto;
+import com.min.edu.plan.ai.dto.RetryPlanRequestDto;
+import com.min.edu.plan.ai.entity.AiRequestType;
 import com.min.edu.plan.ai.llm.AssistantAi;
+import com.min.edu.plan.ai.llm.PlanInsightAi;
+import com.min.edu.plan.ai.prompt.AiPlanInsightPromptBuilder;
 import com.min.edu.plan.ai.prompt.AiPlanPromptBuilder;
+import com.min.edu.plan.dto.ReusablePlanItemDto;
 import com.min.edu.plan.dto.SavePlanDto;
 import com.min.edu.plan.dto.SavePlanItemDto;
 import com.min.edu.plan.place.PlaceValidationService;
 import com.min.edu.plan.place.ValidatedPlace;
+import com.min.edu.plan.service.ReusablePlanItemService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,17 +48,58 @@ public class ChatService {
     private static final Pattern PARENTHESIS_PATTERN = Pattern.compile("\\([^)]*\\)");
 
     private final AssistantAi assistantAi;
+    private final PlanInsightAi planInsightAi;
     private final ObjectMapper objectMapper;
     private final AiPlanPromptBuilder aiPlanPromptBuilder;
+    private final AiPlanInsightPromptBuilder aiPlanInsightPromptBuilder;
     private final PlaceValidationService placeValidationService;
+    private final AiRequestLimitService aiRequestLimitService;
+    private final ReusablePlanItemService reusablePlanItemService;
 
     public SavePlanDto createPlanDraft(PlanRequestDto requestDto) {
         log.info("AI plan request started. regionName={}, regionId={}, startDate={}, endDate={}",
                 requestDto.getRegionName(), requestDto.getRegionId(), requestDto.getStartDate(), requestDto.getEndDate());
+        return generatePlanDraft(requestDto);
+    }
+
+    public SavePlanDto retryPlanDraft(RetryPlanRequestDto retryRequestDto) {
+        PlanRequestDto requestDto = retryRequestDto.getCondition();
+        log.info("AI plan retry request started. regionName={}, regionId={}, startDate={}, endDate={}",
+                requestDto.getRegionName(), requestDto.getRegionId(), requestDto.getStartDate(), requestDto.getEndDate());
+        return retryPlanDraft(requestDto, retryRequestDto.getPreviousPlanItems());
+    }
+
+    public AiPlanInsightResponseDto createPlanInsight(SavePlanDto planDraft) {
+        log.info("AI plan insight request started. regionName={}, startDate={}, endDate={}, itemCount={}",
+                planDraft.getRegionName(), planDraft.getStartDate(), planDraft.getEndDate(),
+                planDraft.getPlanItems() == null ? 0 : planDraft.getPlanItems().size());
+
+        String prompt = aiPlanInsightPromptBuilder.build(planDraft);
+        AiPlanInsightResponseDto insight = requestAiPlanInsight(prompt);
+        validateAiPlanInsight(planDraft, insight);
+        return insight;
+    }
+
+    private SavePlanDto generatePlanDraft(PlanRequestDto requestDto) {
         validatePlanRequest(requestDto);
-        String prompt = aiPlanPromptBuilder.build(requestDto);
+        aiRequestLimitService.checkAndIncrease(TEMP_USER_ID, AiRequestType.AI_PLAN_GENERATE);
+        List<ReusablePlanItemDto> reusablePlanItems = reusablePlanItemService.findCandidates(requestDto);
+        log.info("Reusable plan item candidates found. regionName={}, count={}",
+                requestDto.getRegionName(), reusablePlanItems.size());
+
+        String prompt = aiPlanPromptBuilder.build(requestDto, reusablePlanItems);
         List<AiPlanItemResponseDto> aiPlanItems = requestAiPlanItems(prompt);
         log.info("AI returned {} plan items.", aiPlanItems.size());
+        validateAiPlanItems(requestDto, aiPlanItems);
+        return createSavePlanDto(requestDto, aiPlanItems);
+    }
+
+    private SavePlanDto retryPlanDraft(PlanRequestDto requestDto, List<SavePlanItemDto> previousPlanItems) {
+        validatePlanRequest(requestDto);
+        aiRequestLimitService.checkAndIncrease(TEMP_USER_ID, AiRequestType.AI_PLAN_RETRY);
+        String prompt = aiPlanPromptBuilder.buildRetry(requestDto, previousPlanItems);
+        List<AiPlanItemResponseDto> aiPlanItems = requestAiPlanItems(prompt);
+        log.info("AI returned {} retry plan items.", aiPlanItems.size());
         validateAiPlanItems(requestDto, aiPlanItems);
         return createSavePlanDto(requestDto, aiPlanItems);
     }
@@ -80,6 +131,24 @@ public class ChatService {
             });
         } catch (JsonProcessingException e) {
             log.warn("AI response parse failed. response={}", jsonResponse, e);
+            throw new CustomException(ErrorCode.AI_RESPONSE_PARSE_FAILED);
+        }
+    }
+
+    private AiPlanInsightResponseDto requestAiPlanInsight(String prompt) {
+        String response;
+        try {
+            response = planInsightAi.chat(prompt);
+        } catch (RuntimeException e) {
+            log.warn("AI insight call failed.", e);
+            throw new CustomException(ErrorCode.AI_CALL_FAILED);
+        }
+
+        String jsonResponse = removeMarkdownCodeBlock(response);
+        try {
+            return objectMapper.readValue(jsonResponse, AiPlanInsightResponseDto.class);
+        } catch (JsonProcessingException e) {
+            log.warn("AI insight response parse failed. response={}", jsonResponse, e);
             throw new CustomException(ErrorCode.AI_RESPONSE_PARSE_FAILED);
         }
     }
@@ -122,6 +191,62 @@ public class ChatService {
     private boolean isBetween(BigDecimal value, String min, String max) {
         return value.compareTo(new BigDecimal(min)) >= 0
                 && value.compareTo(new BigDecimal(max)) <= 0;
+    }
+
+    private void validateAiPlanInsight(SavePlanDto planDraft, AiPlanInsightResponseDto insight) {
+        if (insight == null
+                || insight.getItems() == null
+                || insight.getItems().isEmpty()
+                || insight.getCurrency() == null
+                || insight.getCurrency().isBlank()) {
+            throw new CustomException(ErrorCode.AI_RESPONSE_SCHEMA_INVALID);
+        }
+
+        Set<String> planItemKeys = createPlanItemKeys(planDraft);
+        if (planItemKeys.isEmpty() || insight.getItems().size() != planItemKeys.size()) {
+            throw new CustomException(ErrorCode.AI_RESPONSE_SCHEMA_INVALID);
+        }
+
+        Set<String> insightItemKeys = new HashSet<>();
+        for (AiPlanInsightItemResponseDto item : insight.getItems()) {
+            if (item.getDayNumber() == null
+                    || item.getSequence() == null
+                    || item.getPlaceName() == null
+                    || item.getPlaceName().isBlank()
+                    || item.getOneLineReview() == null
+                    || item.getOneLineReview().isBlank()
+                    || item.getOneLineReview().length() > 255
+                    || item.getEstimatedCost() == null
+                    || item.getEstimatedCost() < 0) {
+                throw new CustomException(ErrorCode.AI_RESPONSE_SCHEMA_INVALID);
+            }
+
+            String itemKey = createPlanItemKey(item.getDayNumber(), item.getSequence());
+            if (!planItemKeys.contains(itemKey) || !insightItemKeys.add(itemKey)) {
+                throw new CustomException(ErrorCode.AI_RESPONSE_SCHEMA_INVALID);
+            }
+        }
+    }
+
+    private Set<String> createPlanItemKeys(SavePlanDto planDraft) {
+        Set<String> planItemKeys = new HashSet<>();
+        if (planDraft.getPlanItems() == null) {
+            return planItemKeys;
+        }
+
+        for (SavePlanItemDto item : planDraft.getPlanItems()) {
+            if (item == null || item.getDayNumber() == null || item.getSequence() == null) {
+                continue;
+            }
+
+            planItemKeys.add(createPlanItemKey(item.getDayNumber(), item.getSequence()));
+        }
+
+        return planItemKeys;
+    }
+
+    private String createPlanItemKey(Integer dayNumber, Integer sequence) {
+        return dayNumber + "-" + sequence;
     }
 
     private SavePlanDto createSavePlanDto(PlanRequestDto requestDto, List<AiPlanItemResponseDto> aiPlanItems) {

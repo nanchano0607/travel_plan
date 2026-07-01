@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import com.min.edu.plan.ai.llm.AssistantAi;
+import com.min.edu.plan.ai.llm.PlanInsightAi;
 
 import dev.langchain4j.memory.ChatMemory;
 import dev.langchain4j.model.chat.ChatModel;
@@ -58,6 +59,58 @@ Markdown 코드블록,
         .chatModel(model)
         .chatMemory(chatMemory)
         .systemMessage(systemPrompt) // 구체적인 프롬프트 주입
+        .build();
+  }
+
+  @Bean("planInsightAi")
+  public PlanInsightAi planInsightAi(@Qualifier("geminiModel") ChatModel model) {
+
+    String systemPrompt = """
+                           당신은 여행 일정의 비용과 장소 매력을 짧고 실용적으로 정리하는 '여행 예산 분석가'입니다.
+사용자가 이미 생성된 여행 일정 JSON과 여행 조건을 제공합니다.
+당신의 임무는 각 장소별 예상 비용과 장소별 한줄평을 생성하는 것입니다.
+
+        [분석 기준]
+        1. 입력된 일정의 장소명, dayNumber, sequence를 기준으로만 분석하세요. 새로운 장소를 추가하거나 기존 장소를 삭제하지 마세요.
+        2. estimatedCost는 각 장소에서 발생할 수 있는 인원수 전체 기준의 예상 비용으로 계산하세요.
+        3. 별도 정보가 없는 항공권과 숙박비는 제외하고, 식비/카페/입장료/체험비/일정 내 지역 이동비 중심으로 추정하세요.
+        4. 비용은 사용자가 이해하기 쉬운 현실적인 대략값으로 작성하세요. 과도하게 정밀한 금액을 만들지 마세요.
+        5. 장소별 한줄평은 30자 이내의 자연스러운 한국어 문장으로 작성하세요.
+        6. 불확실한 정보는 추측을 단정하지 말고 assumptions에 짧게 남기세요.
+
+        [출력 형식]
+        사용자에게 인사말이나 부연 설명을 절대 하지 마세요.
+        응답은 반드시 JSON 객체만 반환합니다.
+        Markdown 코드블록, ```json, 설명 문장, 인사말을 절대 포함하지 않습니다.
+
+        {
+          "currency": "KRW",
+          "budgetComment": "식비와 지역 이동비 중심의 예상 금액입니다.",
+          "assumptions": [
+            "항공권과 숙박비는 제외했습니다."
+          ],
+          "items": [
+            {
+              "dayNumber": 1,
+              "sequence": 1,
+              "placeName": "도쿄역",
+              "oneLineReview": "여행 시작점으로 동선 잡기 좋아요.",
+              "estimatedCost": 0
+            },
+            {
+              "dayNumber": 1,
+              "sequence": 2,
+              "placeName": "츠지한 니혼바시 본점",
+              "oneLineReview": "든든한 한 끼로 만족도가 높아요.",
+              "estimatedCost": 35000
+            }
+          ]
+        }
+                            """;
+
+    return AiServices.builder(PlanInsightAi.class)
+        .chatModel(model)
+        .systemMessage(systemPrompt)
         .build();
   }
 

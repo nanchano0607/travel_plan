@@ -3,10 +3,14 @@ package com.min.edu.plan.controller;
 import java.util.List;
 
 import com.min.edu.common.response.ApiResponse;
+import com.min.edu.plan.ai.dto.AiPlanInsightResponseDto;
 import com.min.edu.plan.ai.dto.PlanRequestDto;
+import com.min.edu.plan.ai.dto.RetryPlanRequestDto;
 import com.min.edu.plan.ai.service.ChatService;
 import com.min.edu.plan.dto.PlanItemResponseDto;
+import com.min.edu.plan.dto.ReorderPlanItemsDto;
 import com.min.edu.plan.dto.SavePlanDto;
+import com.min.edu.plan.dto.SavePlanItemDto;
 import com.min.edu.plan.dto.SavePlanResponseDto;
 import com.min.edu.plan.dto.UpdatePlanItemPlaceDto;
 import com.min.edu.plan.service.PlanService;
@@ -55,6 +59,26 @@ public class PlanController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
+    @PostMapping("/ai/retry")
+    @Operation(summary = "AI 여행 계획 초안 재생성", description = "여행 조건을 기반으로 기존 초안과 다른 AI 여행 일정 초안을 다시 생성합니다. DB에는 저장하지 않습니다.")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "AI 여행 계획 초안 재생성 성공")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "요청 값 오류 또는 AI 응답 파싱 실패")
+    public ResponseEntity<ApiResponse<SavePlanDto>> retryAiPlanDraft(@Valid @RequestBody RetryPlanRequestDto requestDto) {
+        SavePlanDto response = chatService.retryPlanDraft(requestDto);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @PostMapping("/ai/insight")
+    @Operation(summary = "AI 여행 계획 비용/한줄평 분석", description = "AI 생성 초안을 기반으로 장소별 예상 비용과 한줄평을 생성합니다. DB에는 저장하지 않습니다.")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "AI 여행 계획 분석 성공")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "요청 값 오류 또는 AI 응답 파싱 실패")
+    public ResponseEntity<ApiResponse<AiPlanInsightResponseDto>> createAiPlanInsight(
+            @Valid @RequestBody SavePlanDto requestDto
+    ) {
+        AiPlanInsightResponseDto response = chatService.createPlanInsight(requestDto);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
     @PatchMapping("/{planId}/items/{dayNumber}/{sequence}")
     @Operation(summary = "일정 항목 장소 수정", description = "Google Places에서 선택한 장소 정보로 특정 일정 항목을 수정합니다.")
     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "일정 항목 장소 수정 성공")
@@ -68,6 +92,32 @@ public class PlanController {
     ) {
         PlanItemResponseDto response = planService.updatePlanItemPlace(planId, dayNumber, sequence, requestDto);
         return ResponseEntity.ok(ApiResponse.success("일정 항목 수정에 성공하셨습니다", response));
+    }
+
+    @PostMapping("/{planId}/items")
+    @Operation(summary = "일정 항목 추가", description = "저장된 여행 계획에 사용자가 선택한 장소를 일정 항목으로 추가합니다.")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "일정 항목 추가 성공")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "요청 값 오류")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "여행 계획 없음")
+    public ResponseEntity<ApiResponse<SavePlanResponseDto>> addPlanItem(
+            @PathVariable Long planId,
+            @Valid @RequestBody SavePlanItemDto requestDto
+    ) {
+        SavePlanResponseDto response = planService.addPlanItem(planId, requestDto);
+        return ResponseEntity.ok(ApiResponse.success("일정 항목 추가에 성공하셨습니다", response));
+    }
+
+    @PatchMapping("/{planId}/items/order")
+    @Operation(summary = "일정 항목 순서 변경", description = "저장된 여행 계획의 일정 항목 dayNumber와 sequence를 변경합니다.")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "일정 항목 순서 변경 성공")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "요청 값 오류")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "여행 계획 없음")
+    public ResponseEntity<ApiResponse<SavePlanResponseDto>> reorderPlanItems(
+            @PathVariable Long planId,
+            @Valid @RequestBody ReorderPlanItemsDto requestDto
+    ) {
+        SavePlanResponseDto response = planService.reorderPlanItems(planId, requestDto);
+        return ResponseEntity.ok(ApiResponse.success("일정 항목 순서 변경에 성공하셨습니다", response));
     }
     
     @GetMapping("/{planId}")
