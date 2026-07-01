@@ -21,6 +21,8 @@ public class PlanItemResponseDto {
     private String placeId;
     private BigDecimal latitude;
     private BigDecimal longitude;
+    private String oneLineReview;
+    private Integer estimatedCost;
     private LocalDateTime createdAt;
 
     public static PlanItemResponseDto from(PlanItem planItem) {
@@ -32,6 +34,8 @@ public class PlanItemResponseDto {
                 planItem.getPlaceId(),
                 planItem.getLatitude(),
                 planItem.getLongitude(),
+                planItem.getOneLineReview(),
+                planItem.getEstimatedCost(),
                 planItem.getCreatedAt()
         );
     }

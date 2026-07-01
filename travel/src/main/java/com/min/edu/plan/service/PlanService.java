@@ -1,16 +1,25 @@
 package com.min.edu.plan.service;
 
 import java.time.temporal.ChronoUnit;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.min.edu.exception.CustomException;
 import com.min.edu.exception.ErrorCode;
+import com.min.edu.plan.dto.PlanItemResponseDto;
+import com.min.edu.plan.dto.ReorderPlanItemDto;
+import com.min.edu.plan.dto.ReorderPlanItemsDto;
 import com.min.edu.plan.dto.SavePlanResponseDto;
 import com.min.edu.plan.dto.SavePlanDto;
 import com.min.edu.plan.dto.SavePlanItemDto;
+import com.min.edu.plan.dto.UpdatePlanItemPlaceDto;
 import com.min.edu.plan.entity.Plan;
 import com.min.edu.plan.entity.PlanItem;
 import com.min.edu.plan.repository.PlanRepository;
@@ -47,7 +56,9 @@ public class PlanService {
                         itemDto.getSequence(),
                         itemDto.getPlaceId(),
                         itemDto.getLatitude(),
-                        itemDto.getLongitude()
+                        itemDto.getLongitude(),
+                        itemDto.getOneLineReview(),
+                        itemDto.getEstimatedCost()
                 );
 
                 plan.getPlanItems().add(planItem);
@@ -81,6 +92,94 @@ public class PlanService {
         planRepository.delete(plan);
     }
 
+    public PlanItemResponseDto updatePlanItemPlace(
+            Long planId,
+            Integer dayNumber,
+            Integer sequence,
+            UpdatePlanItemPlaceDto updateDto
+    ) {
+        Plan plan = planRepository.findById(planId)
+                .orElseThrow(() -> new CustomException(ErrorCode.PLAN_NOT_FOUND));
+
+        PlanItem planItem = plan.getPlanItems()
+                .stream()
+                .filter(item -> dayNumber.equals(item.getDayNumber()) && sequence.equals(item.getSequence()))
+                .findFirst()
+                .orElseThrow(() -> new CustomException(ErrorCode.PLAN_ITEM_NOT_FOUND));
+
+        planItem.updatePlace(
+                updateDto.getRegionName(),
+                updateDto.getRegionId(),
+                updateDto.getLatitude(),
+                updateDto.getLongitude()
+        );
+
+        return PlanItemResponseDto.from(planItem);
+    }
+
+    public SavePlanResponseDto addPlanItem(Long planId, SavePlanItemDto itemDto) {
+        Plan plan = planRepository.findById(planId)
+                .orElseThrow(() -> new CustomException(ErrorCode.PLAN_NOT_FOUND));
+
+        validatePlanItemWithinDateRange(plan, itemDto.getDayNumber());
+
+        int targetSequence = itemDto.getSequence() == null
+                ? getNextSequence(plan, itemDto.getDayNumber())
+                : itemDto.getSequence();
+
+        shiftSequencesForInsert(plan, itemDto.getDayNumber(), targetSequence);
+
+        PlanItem planItem = new PlanItem(
+                plan,
+                itemDto.getPlaceName(),
+                itemDto.getDayNumber(),
+                targetSequence,
+                itemDto.getPlaceId(),
+                itemDto.getLatitude(),
+                itemDto.getLongitude(),
+                itemDto.getOneLineReview(),
+                itemDto.getEstimatedCost()
+        );
+
+        plan.getPlanItems().add(planItem);
+        planRepository.flush();
+        return SavePlanResponseDto.from(plan);
+    }
+
+    public SavePlanResponseDto reorderPlanItems(Long planId, ReorderPlanItemsDto requestDto) {
+        Plan plan = planRepository.findById(planId)
+                .orElseThrow(() -> new CustomException(ErrorCode.PLAN_NOT_FOUND));
+
+        List<PlanItem> planItems = plan.getPlanItems();
+        if (planItems.size() != requestDto.getItems().size()) {
+            throw new CustomException(ErrorCode.PLAN_ITEM_ORDER_INVALID);
+        }
+
+        Map<Long, PlanItem> planItemMap = planItems.stream()
+                .collect(Collectors.toMap(PlanItem::getPlanItemId, Function.identity()));
+
+        Set<Long> requestedIds = new HashSet<>();
+        Set<String> requestedSchedules = new HashSet<>();
+        for (ReorderPlanItemDto itemDto : requestDto.getItems()) {
+            PlanItem planItem = planItemMap.get(itemDto.getPlanItemId());
+            if (planItem == null || !requestedIds.add(itemDto.getPlanItemId())) {
+                throw new CustomException(ErrorCode.PLAN_ITEM_ORDER_INVALID);
+            }
+
+            validatePlanItemWithinDateRange(plan, itemDto.getDayNumber());
+            if (!requestedSchedules.add(itemDto.getDayNumber() + "-" + itemDto.getSequence())) {
+                throw new CustomException(ErrorCode.PLAN_ITEM_ORDER_INVALID);
+            }
+        }
+
+        for (ReorderPlanItemDto itemDto : requestDto.getItems()) {
+            planItemMap.get(itemDto.getPlanItemId())
+                    .updateSchedule(itemDto.getDayNumber(), itemDto.getSequence());
+        }
+
+        return SavePlanResponseDto.from(plan);
+    }
+
     private void validateDateRange(SavePlanDto savePlanDto) {
         if (savePlanDto.getEndDate().isBefore(savePlanDto.getStartDate())) {
             throw new CustomException(ErrorCode.PLAN_INVALID_DATE_RANGE);
@@ -100,5 +199,30 @@ public class PlanService {
                 throw new CustomException(ErrorCode.PLAN_ITEM_DAY_OUT_OF_RANGE);
             }
         }
+    }
+
+    private void validatePlanItemWithinDateRange(Plan plan, Integer dayNumber) {
+        long tripDays = ChronoUnit.DAYS.between(plan.getStartDate(), plan.getEndDate()) + 1;
+        if (dayNumber > tripDays) {
+            throw new CustomException(ErrorCode.PLAN_ITEM_DAY_OUT_OF_RANGE);
+        }
+    }
+
+    private int getNextSequence(Plan plan, Integer dayNumber) {
+        return plan.getPlanItems()
+                .stream()
+                .filter(item -> dayNumber.equals(item.getDayNumber()))
+                .map(PlanItem::getSequence)
+                .filter(sequence -> sequence != null)
+                .max(Integer::compareTo)
+                .orElse(0) + 1;
+    }
+
+    private void shiftSequencesForInsert(Plan plan, Integer dayNumber, Integer targetSequence) {
+        plan.getPlanItems()
+                .stream()
+                .filter(item -> dayNumber.equals(item.getDayNumber()))
+                .filter(item -> item.getSequence() != null && item.getSequence() >= targetSequence)
+                .forEach(item -> item.updateSchedule(dayNumber, item.getSequence() + 1));
     }
 }

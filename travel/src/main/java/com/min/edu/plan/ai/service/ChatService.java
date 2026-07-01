@@ -1,8 +1,14 @@
 package com.min.edu.plan.ai.service;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.math.BigDecimal;
 import java.time.temporal.ChronoUnit;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.regex.Pattern;
 
 import org.springframework.stereotype.Service;
 
@@ -11,16 +17,22 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.min.edu.exception.CustomException;
 import com.min.edu.exception.ErrorCode;
+import com.min.edu.plan.ai.dto.AiPlanInsightItemResponseDto;
+import com.min.edu.plan.ai.dto.AiPlanInsightResponseDto;
 import com.min.edu.plan.ai.dto.AiPlanItemResponseDto;
 import com.min.edu.plan.ai.dto.PlanRequestDto;
+import com.min.edu.plan.ai.dto.RetryPlanRequestDto;
+import com.min.edu.plan.ai.entity.AiRequestType;
 import com.min.edu.plan.ai.llm.AssistantAi;
+import com.min.edu.plan.ai.llm.PlanInsightAi;
+import com.min.edu.plan.ai.prompt.AiPlanInsightPromptBuilder;
 import com.min.edu.plan.ai.prompt.AiPlanPromptBuilder;
+import com.min.edu.plan.dto.ReusablePlanItemDto;
 import com.min.edu.plan.dto.SavePlanDto;
 import com.min.edu.plan.dto.SavePlanItemDto;
-import com.min.edu.plan.dto.SavePlanResponseDto;
 import com.min.edu.plan.place.PlaceValidationService;
 import com.min.edu.plan.place.ValidatedPlace;
-import com.min.edu.plan.service.PlanService;
+import com.min.edu.plan.service.ReusablePlanItemService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,25 +43,65 @@ import lombok.extern.slf4j.Slf4j;
 public class ChatService {
 
     private static final Long TEMP_USER_ID = 1L;
+    private static final int DEFAULT_AI_PLAN_BUDGET = 0;
     private static final int MAX_TRIP_DAYS = 7; // ai응답 텍스트를 고려하여 최대 7일이라는 제한을 둠.
+    private static final Pattern PARENTHESIS_PATTERN = Pattern.compile("\\([^)]*\\)");
 
     private final AssistantAi assistantAi;
+    private final PlanInsightAi planInsightAi;
     private final ObjectMapper objectMapper;
     private final AiPlanPromptBuilder aiPlanPromptBuilder;
-    private final PlanService planService;
+    private final AiPlanInsightPromptBuilder aiPlanInsightPromptBuilder;
     private final PlaceValidationService placeValidationService;
+    private final AiRequestLimitService aiRequestLimitService;
+    private final ReusablePlanItemService reusablePlanItemService;
 
-    public SavePlanResponseDto createPlan(PlanRequestDto requestDto) {
+    public SavePlanDto createPlanDraft(PlanRequestDto requestDto) {
         log.info("AI plan request started. regionName={}, regionId={}, startDate={}, endDate={}",
                 requestDto.getRegionName(), requestDto.getRegionId(), requestDto.getStartDate(), requestDto.getEndDate());
+        return generatePlanDraft(requestDto);
+    }
+
+    public SavePlanDto retryPlanDraft(RetryPlanRequestDto retryRequestDto) {
+        PlanRequestDto requestDto = retryRequestDto.getCondition();
+        log.info("AI plan retry request started. regionName={}, regionId={}, startDate={}, endDate={}",
+                requestDto.getRegionName(), requestDto.getRegionId(), requestDto.getStartDate(), requestDto.getEndDate());
+        return retryPlanDraft(requestDto, retryRequestDto.getPreviousPlanItems());
+    }
+
+    public AiPlanInsightResponseDto createPlanInsight(SavePlanDto planDraft) {
+        log.info("AI plan insight request started. regionName={}, startDate={}, endDate={}, itemCount={}",
+                planDraft.getRegionName(), planDraft.getStartDate(), planDraft.getEndDate(),
+                planDraft.getPlanItems() == null ? 0 : planDraft.getPlanItems().size());
+
+        String prompt = aiPlanInsightPromptBuilder.build(planDraft);
+        AiPlanInsightResponseDto insight = requestAiPlanInsight(prompt);
+        validateAiPlanInsight(planDraft, insight);
+        return insight;
+    }
+
+    private SavePlanDto generatePlanDraft(PlanRequestDto requestDto) {
         validatePlanRequest(requestDto);
-        String prompt = aiPlanPromptBuilder.build(requestDto);
+        aiRequestLimitService.checkAndIncrease(TEMP_USER_ID, AiRequestType.AI_PLAN_GENERATE);
+        List<ReusablePlanItemDto> reusablePlanItems = reusablePlanItemService.findCandidates(requestDto);
+        log.info("Reusable plan item candidates found. regionName={}, count={}",
+                requestDto.getRegionName(), reusablePlanItems.size());
+
+        String prompt = aiPlanPromptBuilder.build(requestDto, reusablePlanItems);
         List<AiPlanItemResponseDto> aiPlanItems = requestAiPlanItems(prompt);
         log.info("AI returned {} plan items.", aiPlanItems.size());
         validateAiPlanItems(requestDto, aiPlanItems);
-        SavePlanDto savePlanDto = createSavePlanDto(requestDto, aiPlanItems);
+        return createSavePlanDto(requestDto, aiPlanItems);
+    }
 
-        return planService.savePlan(savePlanDto);
+    private SavePlanDto retryPlanDraft(PlanRequestDto requestDto, List<SavePlanItemDto> previousPlanItems) {
+        validatePlanRequest(requestDto);
+        aiRequestLimitService.checkAndIncrease(TEMP_USER_ID, AiRequestType.AI_PLAN_RETRY);
+        String prompt = aiPlanPromptBuilder.buildRetry(requestDto, previousPlanItems);
+        List<AiPlanItemResponseDto> aiPlanItems = requestAiPlanItems(prompt);
+        log.info("AI returned {} retry plan items.", aiPlanItems.size());
+        validateAiPlanItems(requestDto, aiPlanItems);
+        return createSavePlanDto(requestDto, aiPlanItems);
     }
 
     private void validatePlanRequest(PlanRequestDto requestDto) {
@@ -79,6 +131,24 @@ public class ChatService {
             });
         } catch (JsonProcessingException e) {
             log.warn("AI response parse failed. response={}", jsonResponse, e);
+            throw new CustomException(ErrorCode.AI_RESPONSE_PARSE_FAILED);
+        }
+    }
+
+    private AiPlanInsightResponseDto requestAiPlanInsight(String prompt) {
+        String response;
+        try {
+            response = planInsightAi.chat(prompt);
+        } catch (RuntimeException e) {
+            log.warn("AI insight call failed.", e);
+            throw new CustomException(ErrorCode.AI_CALL_FAILED);
+        }
+
+        String jsonResponse = removeMarkdownCodeBlock(response);
+        try {
+            return objectMapper.readValue(jsonResponse, AiPlanInsightResponseDto.class);
+        } catch (JsonProcessingException e) {
+            log.warn("AI insight response parse failed. response={}", jsonResponse, e);
             throw new CustomException(ErrorCode.AI_RESPONSE_PARSE_FAILED);
         }
     }
@@ -123,38 +193,175 @@ public class ChatService {
                 && value.compareTo(new BigDecimal(max)) <= 0;
     }
 
+    private void validateAiPlanInsight(SavePlanDto planDraft, AiPlanInsightResponseDto insight) {
+        if (insight == null
+                || insight.getItems() == null
+                || insight.getItems().isEmpty()
+                || insight.getCurrency() == null
+                || insight.getCurrency().isBlank()) {
+            throw new CustomException(ErrorCode.AI_RESPONSE_SCHEMA_INVALID);
+        }
+
+        Set<String> planItemKeys = createPlanItemKeys(planDraft);
+        if (planItemKeys.isEmpty() || insight.getItems().size() != planItemKeys.size()) {
+            throw new CustomException(ErrorCode.AI_RESPONSE_SCHEMA_INVALID);
+        }
+
+        Set<String> insightItemKeys = new HashSet<>();
+        for (AiPlanInsightItemResponseDto item : insight.getItems()) {
+            if (item.getDayNumber() == null
+                    || item.getSequence() == null
+                    || item.getPlaceName() == null
+                    || item.getPlaceName().isBlank()
+                    || item.getOneLineReview() == null
+                    || item.getOneLineReview().isBlank()
+                    || item.getOneLineReview().length() > 255
+                    || item.getEstimatedCost() == null
+                    || item.getEstimatedCost() < 0) {
+                throw new CustomException(ErrorCode.AI_RESPONSE_SCHEMA_INVALID);
+            }
+
+            String itemKey = createPlanItemKey(item.getDayNumber(), item.getSequence());
+            if (!planItemKeys.contains(itemKey) || !insightItemKeys.add(itemKey)) {
+                throw new CustomException(ErrorCode.AI_RESPONSE_SCHEMA_INVALID);
+            }
+        }
+    }
+
+    private Set<String> createPlanItemKeys(SavePlanDto planDraft) {
+        Set<String> planItemKeys = new HashSet<>();
+        if (planDraft.getPlanItems() == null) {
+            return planItemKeys;
+        }
+
+        for (SavePlanItemDto item : planDraft.getPlanItems()) {
+            if (item == null || item.getDayNumber() == null || item.getSequence() == null) {
+                continue;
+            }
+
+            planItemKeys.add(createPlanItemKey(item.getDayNumber(), item.getSequence()));
+        }
+
+        return planItemKeys;
+    }
+
+    private String createPlanItemKey(Integer dayNumber, Integer sequence) {
+        return dayNumber + "-" + sequence;
+    }
+
     private SavePlanDto createSavePlanDto(PlanRequestDto requestDto, List<AiPlanItemResponseDto> aiPlanItems) {
         List<SavePlanItemDto> planItems = aiPlanItems.stream()
                 .map(aiPlanItem -> createSavePlanItemDto(requestDto, aiPlanItem))
+                .flatMap(Optional::stream)
                 .toList();
+
+        if (planItems.isEmpty()) {
+            log.warn("All AI plan items failed Google Places validation. regionName={}", requestDto.getRegionName());
+            throw new CustomException(ErrorCode.PLACE_VALIDATION_FAILED);
+        }
+
+        List<SavePlanItemDto> normalizedPlanItems = normalizeSequences(planItems);
 
         return new SavePlanDto(
                 TEMP_USER_ID,
                 requestDto.getRegionName() + " 여행",
                 requestDto.getRegionName(),
                 requestDto.getRegionId(),
-                requestDto.getBudget(),
+                DEFAULT_AI_PLAN_BUDGET,
                 requestDto.getHeadcount(),
                 requestDto.getStartDate(),
                 requestDto.getEndDate(),
-                planItems);
+                normalizedPlanItems);
     }
 
-    private SavePlanItemDto createSavePlanItemDto(PlanRequestDto requestDto, AiPlanItemResponseDto aiPlanItem) {
+    private Optional<SavePlanItemDto> createSavePlanItemDto(PlanRequestDto requestDto, AiPlanItemResponseDto aiPlanItem) {
         log.info("Correcting AI place with Google Places. placeName={}, aiLatitude={}, aiLongitude={}",
                 aiPlanItem.getPlaceName(), aiPlanItem.getLatitude(), aiPlanItem.getLongitude());
-        ValidatedPlace validatedPlace = placeValidationService.validateAndCorrect(requestDto, aiPlanItem);
+        Optional<ValidatedPlace> validatedPlaceResult = placeValidationService.validateAndCorrect(requestDto, aiPlanItem);
+        if (validatedPlaceResult.isEmpty()) {
+            log.warn("Skipping AI place because Google place validation failed. placeName={}, dayNumber={}, sequence={}",
+                    aiPlanItem.getPlaceName(), aiPlanItem.getDayNumber(), aiPlanItem.getSequence());
+            return Optional.empty();
+        }
+
+        ValidatedPlace validatedPlace = validatedPlaceResult.get();
         log.info("Google place validation succeeded. aiPlaceName={}, googlePlaceName={}, placeId={}, latitude={}, longitude={}",
                 aiPlanItem.getPlaceName(), validatedPlace.getPlaceName(), validatedPlace.getPlaceId(),
                 validatedPlace.getLatitude(), validatedPlace.getLongitude());
 
-        return new SavePlanItemDto(
-                validatedPlace.getPlaceName(),
+        return Optional.of(new SavePlanItemDto(
+                resolveDisplayPlaceName(aiPlanItem.getPlaceName(), validatedPlace.getPlaceName()),
                 aiPlanItem.getDayNumber(),
                 aiPlanItem.getSequence(),
                 validatedPlace.getPlaceId(),
                 validatedPlace.getLatitude(),
-                validatedPlace.getLongitude());
+                validatedPlace.getLongitude()));
+    }
+
+    private List<SavePlanItemDto> normalizeSequences(List<SavePlanItemDto> planItems) {
+        List<SavePlanItemDto> normalizedPlanItems = new ArrayList<>(planItems);
+        normalizedPlanItems.sort(Comparator
+                .comparing(SavePlanItemDto::getDayNumber)
+                .thenComparing(SavePlanItemDto::getSequence));
+
+        Integer currentDayNumber = null;
+        int sequence = 0;
+        for (SavePlanItemDto planItem : normalizedPlanItems) {
+            if (!planItem.getDayNumber().equals(currentDayNumber)) {
+                currentDayNumber = planItem.getDayNumber();
+                sequence = 1;
+            } else {
+                sequence++;
+            }
+
+            if (!planItem.getSequence().equals(sequence)) {
+                log.info("Renumbering plan item sequence. placeName={}, dayNumber={}, oldSequence={}, newSequence={}",
+                        planItem.getPlaceName(), planItem.getDayNumber(), planItem.getSequence(), sequence);
+                planItem.setSequence(sequence);
+            }
+        }
+
+        return normalizedPlanItems;
+    }
+
+    private String resolveDisplayPlaceName(String aiPlaceName, String googlePlaceName) {
+        String cleanedAiPlaceName = cleanAiPlaceName(aiPlaceName);
+        if (shouldKeepAiPlaceName(cleanedAiPlaceName, googlePlaceName)) {
+            log.info("Using AI place name for display because Google display name is ambiguous. aiPlaceName={}, googlePlaceName={}",
+                    cleanedAiPlaceName, googlePlaceName);
+            return cleanedAiPlaceName;
+        }
+
+        return googlePlaceName;
+    }
+
+    private boolean shouldKeepAiPlaceName(String aiPlaceName, String googlePlaceName) {
+        String normalizedAiName = normalizeDisplayName(aiPlaceName);
+        String normalizedGoogleName = normalizeDisplayName(googlePlaceName);
+
+        return !normalizedAiName.isBlank()
+                && !normalizedGoogleName.isBlank()
+                && normalizedAiName.length() > normalizedGoogleName.length()
+                && normalizedAiName.contains(normalizedGoogleName)
+                && normalizedGoogleName.length() <= 2;
+    }
+
+    private String cleanAiPlaceName(String aiPlaceName) {
+        if (aiPlaceName == null) {
+            return "";
+        }
+
+        return PARENTHESIS_PATTERN.matcher(aiPlaceName).replaceAll("").trim();
+    }
+
+    private String normalizeDisplayName(String placeName) {
+        if (placeName == null) {
+            return "";
+        }
+
+        return placeName
+                .toLowerCase()
+                .replaceAll("[\\s·・\\-_'\"()\\[\\],.]", "");
     }
 
     private String removeMarkdownCodeBlock(String response) {

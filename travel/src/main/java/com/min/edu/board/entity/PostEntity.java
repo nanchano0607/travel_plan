@@ -5,14 +5,15 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "boards")
+@Table(name = "posts")
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class BoardEntity {
+public class PostEntity {
 
     @Id
+    @Column(name = "post_id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
@@ -46,4 +47,16 @@ public class BoardEntity {
         this.title = title;
         this.content = content;
     }
+
+    @Column(name = "like_count", nullable = false)
+    private int likeCount = 0;
+
+    public void updateLikeCount(int likeCount) {
+        this.likeCount = likeCount;
+    }
+
+
+    @Column(name = "plan_id")
+    private Long planId;
+
 }
