@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { resolveFileUrl } from "../api/http.js";
 import {
     getReplies,
     createComment,
