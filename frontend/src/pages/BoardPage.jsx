@@ -132,7 +132,7 @@ function BoardPage() {
                 </div>
                 <div className="post-actions">
                   {postId ? <Link to={`/board/${postId}`}>상세 보기</Link> : <button disabled>상세 없음</button>}
-                  <button type="button" onClick={() => handleLikePost(post)}>좋아요</button>
+                  <button type="button" onClick={() => handleLikePost(post)} aria-label="좋아요">♥</button>
                 </div>
               </div>
             </article>
