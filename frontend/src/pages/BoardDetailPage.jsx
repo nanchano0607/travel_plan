@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
+import CommentSection from '../comment_frontend/CommentSection.jsx'
 import { getCurrentUserId, requestJson, unwrapList } from '../api/http.js'
 import PageHeader from '../components/PageHeader.jsx'
 import {
@@ -131,35 +132,10 @@ function BoardDetailPage() {
           )}
         </section>
 
-        <aside className="board-comment-panel">
-          <h2>댓글 {comments.length}</h2>
-
-          <form className="comment-form" onSubmit={handleCreateComment}>
-            <label>
-              댓글 작성
-              <textarea
-                value={commentContent}
-                onChange={(event) => setCommentContent(event.target.value)}
-                placeholder="댓글을 입력하세요."
-              />
-            </label>
-            {commentStatus.message && <div className={`travel-status ${commentStatus.type}`}>{commentStatus.message}</div>}
-            <button className="primary wide" type="submit" disabled={isSubmittingComment}>
-              {isSubmittingComment ? '저장 중...' : '댓글 저장'}
-            </button>
-          </form>
-
-          <div className="comment-list">
-            {comments.length === 0 && <p className="field-help">아직 댓글이 없습니다.</p>}
-            {comments.map((comment, index) => (
-              <article key={getCommentId(comment) || index}>
-                <strong>{getWriter(comment)}</strong>
-                <p>{comment.content || comment.comment || ''}</p>
-                <small>좋아요 {getLikeCount(comment)}</small>
-              </article>
-            ))}
-          </div>
-        </aside>
+          <aside className="board-comment-panel">
+  <CommentSection postId={postId} currentUserId={userId} />
+</aside>
+        
       </div>
     </>
   )
