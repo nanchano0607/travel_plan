@@ -13,7 +13,7 @@ import org.springframework.http.MediaType;
 import java.io.IOException;
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/posts/{postId}/images")
+@RequestMapping("/api/posts/{postId}/images")
 public class ImageController {
 
     private final ImageService imageService;

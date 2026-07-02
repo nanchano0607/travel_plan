@@ -3,6 +3,7 @@ package com.min.edu.board.controller;
 
 import java.util.List;
 
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -31,7 +32,9 @@ public class CommentCtrl {
 
     // 댓글 작성
     @PostMapping
-    public ApiResponse<CommentsResponseDTO> createComment(@RequestBody CommentsRequestDTO requestDTO) {
+    public ApiResponse<CommentsResponseDTO> createComment(@RequestBody CommentsRequestDTO requestDTO, Authentication authentication) {
+        Long userId = (Long) authentication.getPrincipal();
+        requestDTO.setUserId(userId);
         return ApiResponse.success(commentsService.createComment(requestDTO));
     }
 
@@ -56,14 +59,17 @@ public class CommentCtrl {
     // 댓글 수정
     @PutMapping("/{commentId}")
     public ApiResponse<CommentsResponseDTO> updateComment(@PathVariable Long commentId,
-                                                        @RequestBody String newContent) {
-        return ApiResponse.success(commentsService.updateComment(commentId, newContent));
+                                                          @RequestBody String newContent,
+                                                          Authentication authentication) {
+        Long userId = (Long) authentication.getPrincipal();
+        return ApiResponse.success(commentsService.updateComment(commentId, newContent, userId));
     }
 
     // 댓글 삭제
     @DeleteMapping("/{commentId}")
-    public ApiResponse<Void> deleteComment(@PathVariable Long commentId) {
-        commentsService.deleteComment(commentId);
+    public ApiResponse<Void> deleteComment(@PathVariable Long commentId, Authentication authentication) {
+        Long userId = (Long) authentication.getPrincipal();
+        commentsService.deleteComment(commentId, userId);
         return ApiResponse.success("댓글이 삭제 되었습니다.", null);
     }
 

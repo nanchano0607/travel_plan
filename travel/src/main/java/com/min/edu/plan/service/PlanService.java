@@ -5,7 +5,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -81,7 +80,7 @@ public class PlanService {
     public List<SavePlanResponseDto> getPlansByUserId(Long userId) {
         return planRepository.findByUserId(userId)
                 .stream()
-                .map(SavePlanResponseDto::from)
+                .map(plan -> SavePlanResponseDto.from(plan))
                 .toList();
     }
 
@@ -156,7 +155,9 @@ public class PlanService {
         }
 
         Map<Long, PlanItem> planItemMap = planItems.stream()
-                .collect(Collectors.toMap(PlanItem::getPlanItemId, Function.identity()));
+                .collect(Collectors.toMap(
+                        item -> item.getPlanItemId(),
+                        item -> item));
 
         Set<Long> requestedIds = new HashSet<>();
         Set<String> requestedSchedules = new HashSet<>();
@@ -212,9 +213,9 @@ public class PlanService {
         return plan.getPlanItems()
                 .stream()
                 .filter(item -> dayNumber.equals(item.getDayNumber()))
-                .map(PlanItem::getSequence)
+                .map(item -> item.getSequence())
                 .filter(sequence -> sequence != null)
-                .max(Integer::compareTo)
+                .max((first, second) -> Integer.compare(first, second))
                 .orElse(0) + 1;
     }
 

@@ -42,10 +42,9 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class ChatService {
 
-    private static final Long TEMP_USER_ID = 1L;
     private static final int DEFAULT_AI_PLAN_BUDGET = 0;
     private static final int MAX_TRIP_DAYS = 7; // ai응답 텍스트를 고려하여 최대 7일이라는 제한을 둠.
-    private static final Pattern PARENTHESIS_PATTERN = Pattern.compile("\\([^)]*\\)");
+    private static final Pattern PARENTHESIS_PATTERN = Pattern.compile("\\([^)]*\\)"); //"성산일출봉(제주)" -> "성산일출봉" 이런 정규화패턴
 
     private final AssistantAi assistantAi;
     private final PlanInsightAi planInsightAi;
@@ -56,17 +55,17 @@ public class ChatService {
     private final AiRequestLimitService aiRequestLimitService;
     private final ReusablePlanItemService reusablePlanItemService;
 
-    public SavePlanDto createPlanDraft(PlanRequestDto requestDto) {
+    public SavePlanDto createPlanDraft(Long userId, PlanRequestDto requestDto) {
         log.info("AI plan request started. regionName={}, regionId={}, startDate={}, endDate={}",
                 requestDto.getRegionName(), requestDto.getRegionId(), requestDto.getStartDate(), requestDto.getEndDate());
-        return generatePlanDraft(requestDto);
+        return generatePlanDraft(userId, requestDto);
     }
 
-    public SavePlanDto retryPlanDraft(RetryPlanRequestDto retryRequestDto) {
+    public SavePlanDto retryPlanDraft(Long userId, RetryPlanRequestDto retryRequestDto) {
         PlanRequestDto requestDto = retryRequestDto.getCondition();
         log.info("AI plan retry request started. regionName={}, regionId={}, startDate={}, endDate={}",
                 requestDto.getRegionName(), requestDto.getRegionId(), requestDto.getStartDate(), requestDto.getEndDate());
-        return retryPlanDraft(requestDto, retryRequestDto.getPreviousPlanItems());
+        return retryPlanDraft(userId, requestDto, retryRequestDto.getPreviousPlanItems());
     }
 
     public AiPlanInsightResponseDto createPlanInsight(SavePlanDto planDraft) {
@@ -80,9 +79,11 @@ public class ChatService {
         return insight;
     }
 
-    private SavePlanDto generatePlanDraft(PlanRequestDto requestDto) {
+   
+   
+    private SavePlanDto generatePlanDraft(Long userId, PlanRequestDto requestDto) {
         validatePlanRequest(requestDto);
-        aiRequestLimitService.checkAndIncrease(TEMP_USER_ID, AiRequestType.AI_PLAN_GENERATE);
+        aiRequestLimitService.checkAndIncrease(userId, AiRequestType.AI_PLAN_GENERATE);
         List<ReusablePlanItemDto> reusablePlanItems = reusablePlanItemService.findCandidates(requestDto);
         log.info("Reusable plan item candidates found. regionName={}, count={}",
                 requestDto.getRegionName(), reusablePlanItems.size());
@@ -91,17 +92,17 @@ public class ChatService {
         List<AiPlanItemResponseDto> aiPlanItems = requestAiPlanItems(prompt);
         log.info("AI returned {} plan items.", aiPlanItems.size());
         validateAiPlanItems(requestDto, aiPlanItems);
-        return createSavePlanDto(requestDto, aiPlanItems);
+        return createSavePlanDto(userId, requestDto, aiPlanItems);
     }
 
-    private SavePlanDto retryPlanDraft(PlanRequestDto requestDto, List<SavePlanItemDto> previousPlanItems) {
+    private SavePlanDto retryPlanDraft(Long userId, PlanRequestDto requestDto, List<SavePlanItemDto> previousPlanItems) {
         validatePlanRequest(requestDto);
-        aiRequestLimitService.checkAndIncrease(TEMP_USER_ID, AiRequestType.AI_PLAN_RETRY);
+        aiRequestLimitService.checkAndIncrease(userId, AiRequestType.AI_PLAN_RETRY);
         String prompt = aiPlanPromptBuilder.buildRetry(requestDto, previousPlanItems);
         List<AiPlanItemResponseDto> aiPlanItems = requestAiPlanItems(prompt);
         log.info("AI returned {} retry plan items.", aiPlanItems.size());
         validateAiPlanItems(requestDto, aiPlanItems);
-        return createSavePlanDto(requestDto, aiPlanItems);
+        return createSavePlanDto(userId, requestDto, aiPlanItems);
     }
 
     private void validatePlanRequest(PlanRequestDto requestDto) {
@@ -249,7 +250,7 @@ public class ChatService {
         return dayNumber + "-" + sequence;
     }
 
-    private SavePlanDto createSavePlanDto(PlanRequestDto requestDto, List<AiPlanItemResponseDto> aiPlanItems) {
+    private SavePlanDto createSavePlanDto(Long userId, PlanRequestDto requestDto, List<AiPlanItemResponseDto> aiPlanItems) {
         List<SavePlanItemDto> planItems = aiPlanItems.stream()
                 .map(aiPlanItem -> createSavePlanItemDto(requestDto, aiPlanItem))
                 .flatMap(Optional::stream)
@@ -263,7 +264,7 @@ public class ChatService {
         List<SavePlanItemDto> normalizedPlanItems = normalizeSequences(planItems);
 
         return new SavePlanDto(
-                TEMP_USER_ID,
+                userId,
                 requestDto.getRegionName() + " 여행",
                 requestDto.getRegionName(),
                 requestDto.getRegionId(),

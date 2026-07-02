@@ -85,7 +85,7 @@ public class GooglePlacesClient {
         }
 
         List<GooglePlaceSearchResult> candidates = response.getPlaces().stream()
-                .filter(this::hasRequiredFields)
+                .filter(place -> hasRequiredFields(place))
                 .map(place -> new GooglePlaceSearchResult(
                         place.getId(),
                         place.getDisplayName().getText(),
