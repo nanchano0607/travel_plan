@@ -19,6 +19,7 @@ function BoardPage() {
   const [keyword, setKeyword] = useState('')
   const [sortType, setSortType] = useState('latest')
   const [status, setStatus] = useState({ type: 'idle', message: '' })
+  const [likedPostIds, setLikedPostIds] = useState(() => new Set())
   const navigate = useNavigate()
   const userId = getCurrentUserId()
 
@@ -68,9 +69,21 @@ function BoardPage() {
       return
     }
 
+    const postIdKey = String(postId)
+    const isLiked = likedPostIds.has(postIdKey)
+
     try {
       await requestJson(`/api/posts/${postId}/likes/${userId}`, { method: 'POST' })
-      setStatus({ type: 'success', message: '좋아요 요청을 보냈습니다.' })
+      setLikedPostIds((previous) => {
+        const next = new Set(previous)
+        if (isLiked) {
+          next.delete(postIdKey)
+        } else {
+          next.add(postIdKey)
+        }
+        return next
+      })
+      setStatus({ type: 'success', message: isLiked ? '좋아요를 취소했습니다.' : '좋아요를 눌렀습니다.' })
       await loadPosts()
     } catch (error) {
       setStatus({ type: 'error', message: error.message })
@@ -127,13 +140,23 @@ function BoardPage() {
 
           return (
             <article className="post-card" key={postId || `${getTitle(post)}-${index}`}>
-              <button
-                className={`post-cover cover-${(index % 3) + 1}`}
-                onClick={() => postId && navigate(`/board/${postId}`)}
-                disabled={!postId}
-              >
-                <span>{postId ? `POST ${postId}` : 'POST'}</span>
-              </button>
+              <div className="post-cover-wrap">
+                <button
+                  className={`post-cover cover-${(index % 3) + 1}`}
+                  onClick={() => postId && navigate(`/board/${postId}`)}
+                  disabled={!postId}
+                >
+                  <span>{postId ? `POST ${postId}` : 'POST'}</span>
+                </button>
+                <button
+                  type="button"
+                  className={`like-button floating-like-button ${likedPostIds.has(String(postId)) ? 'liked' : ''}`}
+                  onClick={() => handleLikePost(post)}
+                  aria-label="좋아요"
+                >
+                  ♥
+                </button>
+              </div>
               <div className="post-content">
                 <span>{getWriter(post)}</span>
                 <h3>{getTitle(post)}</h3>
@@ -144,7 +167,6 @@ function BoardPage() {
                 </div>
                 <div className="post-actions">
                   {postId ? <Link to={`/board/${postId}`}>상세 보기</Link> : <button disabled>상세 없음</button>}
-                  <button type="button" onClick={() => handleLikePost(post)} aria-label="좋아요">♥</button>
                 </div>
               </div>
             </article>

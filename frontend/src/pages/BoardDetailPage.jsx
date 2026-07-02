@@ -27,6 +27,7 @@ function BoardDetailPage() {
   const [isSubmittingComment, setIsSubmittingComment] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [commentLikes, setCommentLikes] = useState({})
+  const [postLiked, setPostLiked] = useState(false)
 
   useEffect(() => {
     loadDetail()
@@ -141,7 +142,8 @@ function BoardDetailPage() {
 
     try {
       await requestJson(`/api/posts/${postId}/likes/${userId}`, { method: 'POST' })
-      setStatus({ type: 'success', message: '좋아요 요청을 보냈습니다.' })
+      setPostLiked((previous) => !previous)
+      setStatus({ type: 'success', message: postLiked ? '좋아요를 취소했습니다.' : '좋아요를 눌렀습니다.' })
       await loadDetail()
     } catch (error) {
       setStatus({ type: 'error', message: error.message })
@@ -215,6 +217,13 @@ function BoardDetailPage() {
 
           {post && (
             <article className="post-detail-card">
+              <button
+                className={`like-button floating-like-button detail-like-button ${postLiked ? 'liked' : ''}`}
+                onClick={handleLikePost}
+                aria-label="좋아요"
+              >
+                ♥
+              </button>
               <div className="post-detail-meta">
                 <span>{getWriter(post)}</span>
                 <small>게시글 ID: {getPostId(post) || postId}</small>
@@ -246,7 +255,6 @@ function BoardDetailPage() {
 
               <div className="post-detail-stats">
                 <small>좋아요 {getLikeCount(post)}</small>
-                <button className="like-button" onClick={handleLikePost} aria-label="좋아요">♥</button>
               </div>
             </article>
           )}

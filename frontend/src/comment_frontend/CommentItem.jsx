@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { resolveFileUrl } from "../api/http.js";
 import {
     getReplies,
     createComment,
@@ -10,7 +11,7 @@ import {
     checkCommentLiked,
     uploadCommentImage,
     getCommentImages,
-} from "./commentapi";
+} from "./CommentApi";
 
 /**
  * 댓글 한 개 (대댓글 포함) 렌더링
@@ -184,7 +185,7 @@ export default function CommentItem({ comment, postId, currentUserId, onDeleted 
                     {images.map((img) => (
                         <img
                             key={img.imageId}
-                            src={img.filePath ?? ""}
+                            src={resolveFileUrl(img.filePath ?? img.imageUrl ?? img.url ?? "")}
                             alt="댓글 첨부 이미지"
                             className="comment-image-thumb"
                         />
@@ -193,8 +194,12 @@ export default function CommentItem({ comment, postId, currentUserId, onDeleted 
             )}
 
             <div className="comment-item-actions">
-                <button className="secondary" onClick={handleToggleLike}>
-                    {liked ? "♥" : "♡"} {likeCount}
+                <button
+                    className={`secondary comment-like-button ${liked ? "liked" : ""}`}
+                    onClick={handleToggleLike}
+                    aria-label="댓글 좋아요"
+                >
+                    <span>♥</span> {likeCount}
                 </button>
                 <button className="secondary" onClick={() => setReplyMode((v) => !v)}>답글</button>
 
