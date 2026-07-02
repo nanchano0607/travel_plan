@@ -58,12 +58,16 @@ public class PostService {
         return new PostDto(board);
     }
 
-    // 게시글 삭제
     @Transactional
-    public void deleteBoard(Long id) {
-        PostEntity board = postRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("게시글이 존재하지 않습니다. id: " + id));
-        postRepository.delete(board);
+    public void deleteBoard(Long id, Long userId) {
+        PostEntity post = postRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("게시글이 존재하지 않습니다. id=" + id));
+
+        if (!post.getUserId().equals(userId)) {
+            throw new IllegalStateException("본인 글만 삭제할 수 있습니다.");
+        }
+
+        postRepository.delete(post);
     }
 
     // 게시글 목록 페이징
@@ -84,7 +88,7 @@ public class PostService {
 
     // 작성자 검색
     @Transactional(readOnly = true)
-    public Page<PostDto> searchByUserId(String userId, int page, int size) {
+    public Page<PostDto> searchByUserId(Long userId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         return postRepository.findByUserId(userId, pageable)
                 .map(PostDto::new);

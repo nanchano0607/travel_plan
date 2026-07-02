@@ -2,73 +2,89 @@ package com.min.edu.board.controller;
 
 import com.min.edu.board.dto.PostDto;
 import com.min.edu.board.service.PostService;
+import com.min.edu.common.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.data.domain.Page;
 import java.util.List;
 
+
+
+
+
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/posts")
+@RequestMapping("/api/posts")
 public class PostController {
 
     private final PostService postService;
 
     // 게시글 작성
     @PostMapping
-    public ResponseEntity<PostDto> createBoard(@RequestBody PostDto dto) {
-        return ResponseEntity.ok(postService.createBoard(dto));
+    public ApiResponse<PostDto> createBoard(
+            @RequestBody PostDto dto,
+            Authentication authentication) {
+        Long userId = (Long) authentication.getPrincipal();
+        dto.setUserId(userId);
+        return ApiResponse.success(postService.createBoard(dto));
     }
 
-    // 게시글 전체 조회 (여행 계획 공유)
+    // 게시글 전체 조회
     @GetMapping
-    public ResponseEntity<List<PostDto>> getAllBoards() {
-        return ResponseEntity.ok(postService.getAllBoards());
+    public ApiResponse<List<PostDto>> getAllBoards() {
+        return ApiResponse.success(postService.getAllBoards());
     }
 
     // 게시글 단건 조회
     @GetMapping("/{id}")
-    public ResponseEntity<PostDto> getBoard(@PathVariable Long id) {
-        return ResponseEntity.ok(postService.getBoard(id));
+    public ApiResponse<PostDto> getBoard(@PathVariable Long id) {
+        return ApiResponse.success(postService.getBoard(id));
     }
 
     // 게시글 수정
     @PutMapping("/{id}")
-    public ResponseEntity<PostDto> updateBoard(@PathVariable Long id, @RequestBody PostDto dto) {
-        return ResponseEntity.ok(postService.updateBoard(id, dto));
+    public ApiResponse<PostDto> updateBoard(
+            @PathVariable Long id,
+            @RequestBody PostDto dto,
+            Authentication authentication) {
+        Long userId = (Long) authentication.getPrincipal();
+        dto.setUserId(userId);
+        return ApiResponse.success(postService.updateBoard(id, dto));
     }
 
-    // 게시글 삭제
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteBoard(@PathVariable Long id) {
-        postService.deleteBoard(id);
-        return ResponseEntity.noContent().build();
+    public ApiResponse<Void> deleteBoard(
+            @PathVariable Long id,
+            Authentication authentication) {
+        Long userId = (Long) authentication.getPrincipal();
+        postService.deleteBoard(id, userId);   // 서비스에서 작성자 일치 검증
+        return ApiResponse.success(null);
     }
 
     // 게시글 목록 페이징
     @GetMapping("/page")
-    public ResponseEntity<Page<PostDto>> getBoardList(
+    public ApiResponse<Page<PostDto>> getBoardList(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        return ResponseEntity.ok(postService.getBoardList(page, size));
+        return ApiResponse.success(postService.getBoardList(page, size));
     }
 
-    // 제목 검색
+    /// 제목 검색
     @GetMapping("/search/title")
-    public ResponseEntity<Page<PostDto>> searchByTitle(
+    public ApiResponse<Page<PostDto>> searchByTitle(
             @RequestParam String title,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        return ResponseEntity.ok(postService.searchByTitle(title, page, size));
+        return ApiResponse.success(postService.searchByTitle(title, page, size));
     }
 
     // 작성자 검색
     @GetMapping("/search/user")
-    public ResponseEntity<Page<PostDto>> searchByUserId(
-            @RequestParam String userId,
+    public ApiResponse<Page<PostDto>> searchByUserId(
+            @RequestParam Long userId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        return ResponseEntity.ok(postService.searchByUserId(userId, page, size));
+        return ApiResponse.success(postService.searchByUserId(userId, page, size));
     }
 }

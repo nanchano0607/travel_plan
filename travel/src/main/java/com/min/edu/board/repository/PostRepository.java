@@ -13,5 +13,5 @@ public interface PostRepository extends JpaRepository<PostEntity, Long> {
     Page<PostEntity> findByTitleContaining(String title, Pageable pageable);
 
     // 작성자 검색
-    Page<PostEntity> findByUserId(String userId, Pageable pageable);
+    Page<PostEntity> findByUserId(Long userId, Pageable pageable);
 }
