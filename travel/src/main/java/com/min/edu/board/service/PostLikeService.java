@@ -1,5 +1,9 @@
 package com.min.edu.board.service;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
+import com.min.edu.board.dto.PostDto;
 import com.min.edu.board.entity.PostEntity;
 import com.min.edu.board.entity.PostLikeEntity;
 import com.min.edu.board.entity.PostLikeId;
@@ -50,5 +54,14 @@ public class PostLikeService {
         PostEntity post = postRepository.findById(postId)
                 .orElseThrow(() -> new IllegalArgumentException("게시글이 존재하지 않습니다."));
         post.updateLikeCount(post.getLikeCount() + delta);
+    }
+
+    // 특정 유저가 좋아요 한 게시글 목록 조회
+    @Transactional(readOnly = true)
+    public List<PostDto> getLikedPosts(Long userId) {
+        return postLikeRepository.findById_UserId(userId)
+                .stream()
+                .map(like -> new PostDto(like.getPost()))
+                .collect(Collectors.toList());
     }
 }

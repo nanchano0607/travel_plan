@@ -10,6 +10,7 @@ import BoardPage from './pages/BoardPage.jsx'
 import BoardWritePage from './pages/BoardWritePage.jsx'
 import MyPage from './pages/MyPage.jsx'
 import OverviewPage from './pages/OverviewPage.jsx'
+import PlanDetailPage from './pages/PlanDetailPage.jsx'
 import ResetPasswordPage from './pages/ResetPasswordPage.jsx'
 import TravelPage from './pages/TravelPage.jsx'
 
@@ -86,8 +87,10 @@ function App() {
             <Route path="/travel" element={<TravelPage />} />
             <Route path="/board" element={<BoardPage />} />
             <Route path="/board/write" element={<BoardWritePage />} />
+            <Route path="/board/:postId/edit" element={<BoardWritePage />} />
             <Route path="/board/:postId" element={<BoardDetailPage />} />
             <Route path="/mypage" element={<MyPage />} />
+            <Route path="/mypage/plans/:planId" element={<PlanDetailPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>

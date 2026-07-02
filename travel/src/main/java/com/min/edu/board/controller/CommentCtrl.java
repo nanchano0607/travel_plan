@@ -79,4 +79,11 @@ public class CommentCtrl {
         return ApiResponse.success(commentsService.getCommentCount(postId));
     }
 
+    // 내가 작성한 댓글 전체 조회
+    @GetMapping("/user/me")
+    public ApiResponse<List<CommentsResponseDTO>> getMyComments(Authentication authentication) {
+        Long userId = (Long) authentication.getPrincipal();
+        return ApiResponse.success(commentsService.getCommentsByUserId(userId));
+    }
+
 }
