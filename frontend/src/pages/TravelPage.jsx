@@ -167,7 +167,7 @@ function TravelPage() {
     setSavedPlan(null)
     setPlanInsight(null)
     setInsightStatus({ type: 'idle', message: '' })
-    setStatus({ type: 'loading', message: 'AI가 일정 초안을 생성하고 있습니다.' })
+    setStatus({ type: 'loading', message: '일정 생성 중' })
 
     try {
       const result = await requestApi('/api/plan/ai', {
@@ -421,7 +421,7 @@ function TravelPage() {
             onClick={generatePlan}
             type="button"
           >
-            {isGenerating ? 'AI 일정 생성 중' : 'AI 일정 생성하기'}
+            {isGenerating ? '일정 생성 중' : 'AI 일정 생성하기'}
           </button>
 
           {status.message && (

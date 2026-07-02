@@ -69,9 +69,9 @@ public class SecurityConfig {
                                 "/api/auth/email-verifications/confirm",
                                 "/api/auth/password-reset/request",
                                 "/api/auth/password-reset/confirm",
-                                "/posts/**",
                                 "/api/comment/**",
-                                "/api/userInfo/**"
+                                "/api/userInfo/**",
+                                "/api/posts"
                         ).permitAll()
                         .requestMatchers(
                                 "/swagger-ui/**",

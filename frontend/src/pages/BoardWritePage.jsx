@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-import { getCurrentUserId, requestJson } from '../api/http.js'
+import { getAccessToken, getCurrentUserId, requestJson } from '../api/http.js'
 import PageHeader from '../components/PageHeader.jsx'
+import RequireLoginModal from '../components/RequireLoginModal.jsx'
 import { getPostId } from './boardHelpers.js'
 
 const EMPTY_FORM = {
@@ -16,6 +17,11 @@ function BoardWritePage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const navigate = useNavigate()
   const userId = getCurrentUserId()
+  const hasAccessToken = Boolean(getAccessToken())
+
+  if (!hasAccessToken) {
+    return <RequireLoginModal />
+  }
 
   async function handleSubmit(event) {
     event.preventDefault()

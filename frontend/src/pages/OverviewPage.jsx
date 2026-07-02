@@ -71,7 +71,6 @@ function OverviewPage({ onNavigate }) {
             <span>POPULAR POSTS</span>
             <h2>인기 여행 게시글</h2>
           </div>
-          <p>좋아요가 많은 여행 글을 먼저 보여줍니다.</p>
         </div>
 
         {postStatus.type === 'loading' && <StatusMessage type="loading" message={postStatus.message} />}
