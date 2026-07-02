@@ -36,9 +36,13 @@ public class SavePlanResponseDto {
                 ? Collections.emptyList()
                 : plan.getPlanItems().stream()
                         .sorted(Comparator
-                                .comparing(PlanItem::getDayNumber, Comparator.nullsLast(Integer::compareTo))
-                                .thenComparing(PlanItem::getSequence, Comparator.nullsLast(Integer::compareTo)))
-                        .map(PlanItemResponseDto::from)
+                                .comparing(
+                                        (PlanItem item) -> item.getDayNumber(),
+                                        Comparator.nullsLast((Integer first, Integer second) -> Integer.compare(first, second)))
+                                .thenComparing(
+                                        (PlanItem item) -> item.getSequence(),
+                                        Comparator.nullsLast((Integer first, Integer second) -> Integer.compare(first, second))))
+                        .map(item -> PlanItemResponseDto.from(item))
                         .toList();
 
         return new SavePlanResponseDto(
