@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -31,10 +30,10 @@ public class ReusablePlanItemService {
                 .filter(item -> item.getPlaceId() != null && !item.getPlaceId().isBlank())
                 .filter(item -> item.getLatitude() != null && item.getLongitude() != null)
                 .collect(Collectors.toMap(
-                        PlanItem::getPlaceId,
-                        Function.identity(),
+                        item -> item.getPlaceId(),
+                        item -> item,
                         (first, ignored) -> first,
-                        LinkedHashMap::new))
+                        () -> new LinkedHashMap<>()))
                 .values());
 
         Collections.shuffle(uniqueItems);
@@ -42,7 +41,7 @@ public class ReusablePlanItemService {
         return uniqueItems
                 .stream()
                 .limit(MAX_CANDIDATE_COUNT)
-                .map(ReusablePlanItemDto::from)
+                .map(item -> ReusablePlanItemDto.from(item))
                 .toList();
     }
 }
