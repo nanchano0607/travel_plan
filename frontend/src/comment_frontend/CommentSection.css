@@ -1,0 +1,210 @@
+/* CommentSection.css */
+
+.comment-section {
+  max-width: 700px;
+  margin-top: 32px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.comment-section h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: #222;
+}
+
+/* 댓글 작성 박스 */
+.comment-write-box {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.comment-write-box textarea {
+  flex: 1;
+  resize: none;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.comment-write-box textarea:disabled {
+  background: #f5f5f5;
+  color: #999;
+}
+
+.comment-write-box button {
+  align-self: flex-end;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.comment-write-box button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.comment-loading,
+.comment-empty {
+  color: #888;
+  font-size: 14px;
+  padding: 16px 0;
+}
+
+/* 댓글 리스트 */
+.comment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.comment-item {
+  border-bottom: 1px solid #eee;
+  padding-bottom: 14px;
+}
+
+.comment-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #888;
+  margin-bottom: 6px;
+}
+
+.comment-user {
+  font-weight: 600;
+  color: #333;
+}
+
+.comment-content {
+  font-size: 14px;
+  color: #222;
+  line-height: 1.5;
+  margin: 0 0 8px 0;
+  white-space: pre-wrap;
+}
+
+.comment-edit-box textarea {
+  width: 100%;
+  resize: none;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 8px;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.comment-edit-actions,
+.reply-write-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+/* 첨부 이미지 */
+.comment-images {
+  display: flex;
+  gap: 6px;
+  margin: 8px 0;
+  flex-wrap: wrap;
+}
+
+.comment-image-thumb {
+  width: 90px;
+  height: 90px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #eee;
+}
+
+/* 댓글 하단 액션 영역 */
+.comment-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.comment-actions button {
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
+.comment-actions button:hover {
+  color: #2563eb;
+}
+
+.comment-actions button.liked {
+  color: #e11d48;
+  font-weight: 600;
+}
+
+.comment-image-upload {
+  color: #666;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.comment-image-upload:hover {
+  color: #2563eb;
+}
+
+/* 답글 작성창 */
+.reply-write-box {
+  margin-top: 10px;
+  margin-left: 16px;
+}
+
+.reply-write-box textarea {
+  width: 100%;
+  resize: none;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 8px;
+  font-size: 13px;
+  font-family: inherit;
+}
+
+/* 대댓글 목록 */
+.reply-list {
+  margin-top: 10px;
+  margin-left: 20px;
+  padding-left: 12px;
+  border-left: 2px solid #f0f0f0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.comment-edit-box,
+.comment-edit-actions button,
+.reply-write-actions button {
+  font-size: 13px;
+}
+
+.comment-edit-actions button,
+.reply-write-actions button {
+  border: 1px solid #ddd;
+  background: #fff;
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+.comment-edit-actions button:first-child,
+.reply-write-actions button:first-child {
+  background: #2563eb;
+  color: #fff;
+  border-color: #2563eb;
+}

@@ -74,3 +74,9 @@ export function unwrapList(data) {
   if (Array.isArray(data?.list)) return data.list
   return []
 }
+
+export function resolveFileUrl(path) {
+  if (!path) return ''
+  if (/^https?:\/\//i.test(path)) return path
+  return `${API_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`
+}

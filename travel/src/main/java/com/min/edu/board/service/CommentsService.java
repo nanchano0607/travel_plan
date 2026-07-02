@@ -83,4 +83,13 @@ public class CommentsService {
         return commentsRepository.countByPostId(postId);
     }
 
+    // 특정 유저가 작성한 댓글 전체 조회
+    @Transactional(readOnly = true)
+    public List<CommentsResponseDTO> getCommentsByUserId(Long userId) {
+        return commentsRepository.findByUserId(userId)
+                .stream()
+                .map(CommentsResponseDTO::fromEntity)
+                .collect(Collectors.toList());
+    }
+
 }
