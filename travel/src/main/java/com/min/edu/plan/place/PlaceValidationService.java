@@ -141,7 +141,7 @@ public class PlaceValidationService {
         return googlePlaces.stream()
                 .map(googlePlace -> scoreCandidate(regionName, aiPlanItem, googlePlace, requestedType))
                 .filter(candidate -> candidate.score() >= minScore)
-                .max(Comparator.comparingInt(ScoredPlaceCandidate::score));
+                .max(Comparator.comparingInt(candidate -> candidate.score()));
     }
 
     private ScoredPlaceCandidate scoreCandidate(
@@ -241,7 +241,7 @@ public class PlaceValidationService {
     }
 
     private boolean containsAny(List<String> values, Set<String> expectedValues) {
-        return values.stream().anyMatch(expectedValues::contains);
+        return values.stream().anyMatch(value -> expectedValues.contains(value));
     }
 
     private boolean isNameSimilar(String aiPlaceName, String googlePlaceName) {
@@ -289,8 +289,8 @@ public class PlaceValidationService {
         Set<String> dynamicStopWords = extractDynamicStopWords(regionName);
 
         return TOKEN_SPLIT_PATTERN.splitAsStream(withoutParentheses)
-                .map(this::normalizeName)
-                .map(this::removeCommonSuffix)
+                .map(token -> normalizeName(token))
+                .map(token -> removeCommonSuffix(token))
                 .filter(token -> token.length() >= 3)
                 .filter(token -> !NAME_HINT_STOP_WORDS.contains(token))
                 .filter(token -> !dynamicStopWords.contains(token))
@@ -303,7 +303,7 @@ public class PlaceValidationService {
         }
 
         return TOKEN_SPLIT_PATTERN.splitAsStream(regionName)
-                .map(this::normalizeName)
+                .map(token -> normalizeName(token))
                 .filter(token -> !token.isBlank())
                 .collect(java.util.stream.Collectors.toSet());
     }
