@@ -26,4 +26,6 @@ public interface CommentsRepository extends JpaRepository<CommentsEntity, Long> 
 
 
     Long postId(Long postId);
+
+    Object userId(Long userId);
 }

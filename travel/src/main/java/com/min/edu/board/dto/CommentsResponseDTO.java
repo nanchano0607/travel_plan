@@ -2,6 +2,7 @@ package com.min.edu.board.dto;
 
 import com.min.edu.board.entity.CommentsEntity;
 import lombok.*;
+import net.minidev.json.annotate.JsonIgnore;
 
 import java.time.LocalDateTime;
 
@@ -14,6 +15,8 @@ public class CommentsResponseDTO {
 
     private Long commentId;            // 댓글 번호
     private Long postId;               // 게시글 번호
+
+    @JsonIgnore
     private Long userId;             // 작성자
     private Long parentCommentId;      // 부모 댓글 번호
     private String content;            // 내용

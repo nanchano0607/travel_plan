@@ -56,19 +56,25 @@ public class CommentsService {
 
     // 댓글 수정
     @Transactional
-    public CommentsResponseDTO updateComment(Long commentId, String newContent) {
-        CommentsEntity comments = commentsRepository.findById(commentId)
+    public CommentsResponseDTO updateComment(Long commentId, String newContent, Long userId) {
+        CommentsEntity comment = commentsRepository.findById(commentId)
                 .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
-        comments.setContent(newContent);
-        return CommentsResponseDTO.fromEntity(comments);
+        if (!comment.getUserId().equals(userId)) {
+            throw new CustomException((ErrorCode.UNAUTHORIZED_USER));
+        }
+        comment.setContent(newContent);
+        return CommentsResponseDTO.fromEntity(comment);
     }
 
     // 댓글 삭제
     @Transactional
-    public void deleteComment(Long commentId) {
-        CommentsEntity comments = commentsRepository.findById(commentId)
+    public void deleteComment(Long commentId, Long userId) {
+        CommentsEntity comment = commentsRepository.findById(commentId)
                 .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
-        commentsRepository.delete(comments);
+        if (!comment.getUserId().equals(userId)) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED_USER);
+        }
+        commentsRepository.delete(comment);
     }
 
     // 특정 게시글 댓글 수 조회

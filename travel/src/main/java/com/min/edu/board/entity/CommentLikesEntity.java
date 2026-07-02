@@ -26,6 +26,7 @@ public class CommentLikesEntity {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
+    @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();
     }
