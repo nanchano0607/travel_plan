@@ -47,9 +47,6 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
         String registrationId = userRequest.getClientRegistration().getRegistrationId();
         AuthProvider provider = AuthProvider.valueOf(registrationId.toUpperCase());
 
-        // TODO : 로그 나중에 지우기
-        log.info("[OAuth2] provider={}, attributes={}", provider, oAuth2User.getAttributes());
-
         String nameAttributeKey = userRequest
                 .getClientRegistration()
                 .getProviderDetails()
@@ -88,6 +85,7 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
         return new CustomOAuth2User(
                 user.getUserId(),
                 user.getEmail(),
+                user.getNickname(),
                 user.getRole(),
                 isLinkMode,
                 List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name())),

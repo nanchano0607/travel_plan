@@ -19,6 +19,7 @@ import com.min.edu.exception.CustomException;
 import com.min.edu.exception.ErrorCode;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class AuthService {
     private final UserRepository userRepository;
     private final LocalAuthRepository localAuthRepository;
@@ -76,10 +78,8 @@ public class AuthService {
     public LoginResponse login(LoginRequest request) {
         UserEntity user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new CustomException(ErrorCode.INVALID_CREDENTIALS));
-
         LocalAuth localAuth = localAuthRepository.findById(user.getUserId())
                 .orElseThrow(() -> new CustomException(ErrorCode.INVALID_CREDENTIALS));
-
         if (localAuth.isLoginLocked()) {
             throw new CustomException(ErrorCode.ACCOUNT_LOCKED);
         }
@@ -96,7 +96,7 @@ public class AuthService {
             }
             throw new CustomException(ErrorCode.INVALID_CREDENTIALS);
         }
-
+        log.info("passwordEncoder matching pass");
         // REQ-AUTH-06: 이메일 인증 전(PENDING) 계정은 로그인 차단
         if (localAuth.getStatus() != LocalAuthStatus.ACTIVE) {
             throw new CustomException(ErrorCode.ACCOUNT_NOT_VERIFIED);
@@ -107,8 +107,11 @@ public class AuthService {
         String accessToken = jwtTokenProvider.createAccessToken(
                 user.getUserId(),
                 user.getEmail(),
+                user.getNickname(),
                 user.getRole()
         );
+        log.info("accessToken providing pass");
+        System.out.println("Hello");
 
         return LoginResponse.builder()
                 .userId(user.getUserId())

@@ -14,6 +14,7 @@ public class CustomOAuth2User implements OAuth2User {
 
     private final Long userId;
     private final String email;
+    private final String nickName;
     private final Role role;
     private final boolean linkMode;
     private final Collection<? extends GrantedAuthority> authorities;
@@ -23,6 +24,7 @@ public class CustomOAuth2User implements OAuth2User {
     public CustomOAuth2User(
             Long userId,
             String email,
+            String nickName,
             Role role,
             boolean linkMode,
             Collection<? extends GrantedAuthority> authorities,
@@ -31,6 +33,7 @@ public class CustomOAuth2User implements OAuth2User {
     ) {
         this.userId = userId;
         this.email = email;
+        this.nickName = nickName;
         this.role = role;
         this.linkMode = linkMode;
         this.authorities = authorities;
