@@ -1,5 +1,6 @@
 package com.min.edu.board.service;
 
+import com.min.edu.board.dto.PostImageDto;
 import com.min.edu.board.entity.CommentImageEntity;
 import com.min.edu.board.entity.CommentImageId;
 import com.min.edu.board.entity.ImageEntity;
@@ -30,12 +31,12 @@ public class CommentImageService {
     // 이미지 업도르 및 댓글에 연결
     @Transactional
     public void uploadImage(Long commentId, MultipartFile file) throws IOException {
-        // String uploadDir = "uploads/comment/";  ← 이 줄만 삭제
         String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
-        String filePath = uploadDir + fileName;  // 이 줄은 그대로, 위에서 선언한 필드를 사용
+        String absoluteUploadDir = System.getProperty("user.dir") + "/" + uploadDir;
+        String filePath = absoluteUploadDir + fileName;
 
         // 폴더가 없을 시 생성
-        File dir = new File(uploadDir);
+        File dir = new File(absoluteUploadDir);
         if (!dir.exists()) dir.mkdirs();
 
         // 파일 저장
@@ -60,8 +61,14 @@ public class CommentImageService {
 
     // 특정 댓글 이미지 전체 조회
     @Transactional(readOnly = true)
-    public List<CommentImageEntity> getImagesByCommentId(Long commentId) {
-        return commentImageRepository.findByCommentId(commentId);
+    public List<PostImageDto> getImagesByCommentId(Long commentId) {
+        return commentImageRepository.findByCommentId(commentId)
+                .stream()
+                .map(CommentImageEntity::getImageId)
+                .map(imageRepository::findById)
+                .flatMap(optionalImage -> optionalImage.stream())
+                .map(PostImageDto::from)
+                .toList();
     }
 
     // 특정 댓글 이미지 삭제 <<- 수정 07/01
