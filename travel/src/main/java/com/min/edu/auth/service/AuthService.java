@@ -78,19 +78,15 @@ public class AuthService {
     public LoginResponse login(LoginRequest request) {
         UserEntity user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new CustomException(ErrorCode.INVALID_CREDENTIALS));
-                log.info("userEntity 생성 확인");
         LocalAuth localAuth = localAuthRepository.findById(user.getUserId())
                 .orElseThrow(() -> new CustomException(ErrorCode.INVALID_CREDENTIALS));
-                log.info("localAuth 생성 확인");
         if (localAuth.isLoginLocked()) {
             throw new CustomException(ErrorCode.ACCOUNT_LOCKED);
         }
 
         if (localAuth.isLoginLockExpired()) {
             localAuth.resetLoginFailure();
-            log.info("loginLock check pass 생성 확인");
         }
-            log.info("loginLock check pass 생성 확인");
 
         if (!passwordEncoder.matches(request.getPassword(), localAuth.getPassword())) {
             localAuth.increaseFailedLoginCount();

@@ -70,7 +70,6 @@ public class SecurityConfig {
                                 "/api/auth/email-verifications/confirm",
                                 "/api/auth/password-reset/request",
                                 "/api/auth/password-reset/confirm",
-                                "/api/plan/**",
                                 "/posts/**",
                                 "/api/comment/**"
                         ).permitAll()
@@ -80,7 +79,7 @@ public class SecurityConfig {
                                 "/error"
                         ).permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        // .requestMatchers("/api/plan/**").hasAnyRole("ADMIN", "USER") -> 회원가입 없이 여행계획 짤 수 있게 할건가요??
+                        .requestMatchers("/api/plan/**").hasAnyRole("ADMIN", "USER")
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2 -> oauth2
@@ -96,5 +95,4 @@ public class SecurityConfig {
                 );
         return http.build();
     }
-
 }
