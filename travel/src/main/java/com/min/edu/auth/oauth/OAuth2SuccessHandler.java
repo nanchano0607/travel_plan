@@ -55,6 +55,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         String accessToken = jwtTokenProvider.createAccessToken(
                 oAuth2User.getUserId(),
                 oAuth2User.getEmail(),
+                oAuth2User.getNickName(),
                 oAuth2User.getRole()
         );
 

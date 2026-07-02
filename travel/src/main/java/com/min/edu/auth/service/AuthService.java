@@ -107,6 +107,7 @@ public class AuthService {
         String accessToken = jwtTokenProvider.createAccessToken(
                 user.getUserId(),
                 user.getEmail(),
+                user.getNickname(),
                 user.getRole()
         );
         log.info("accessToken providing pass");

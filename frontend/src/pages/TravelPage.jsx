@@ -606,15 +606,51 @@ function TravelPage() {
 }
 
 async function requestApi(path, options) {
+  const accessToken = localStorage.getItem('accessToken')
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+  }
+
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method: options.method,
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(options.body),
+    headers,
+    ...(options.body !== undefined ? { body: JSON.stringify(options.body) } : {}),
   })
 
-  const payload = await response.json().catch(() => null)
+  const text = await response.text()
+  const contentType = response.headers.get('content-type') || ''
+
+  if (text && !contentType.includes('application/json')) {
+    const preview = text.replace(/\s+/g, ' ').slice(0, 120)
+    const lowerPreview = preview.toLowerCase()
+
+    if (contentType.includes('text/html') || lowerPreview.includes('<!doctype html') || lowerPreview.includes('<html')) {
+      throw new Error('서버가 JSON 대신 HTML을 반환했습니다. 로그인 토큰이 없거나 만료되어 로그인 페이지로 이동했을 수 있습니다.')
+    }
+
+    throw new Error(`서버가 JSON이 아닌 응답을 반환했습니다. (${response.status}) 응답: ${preview}`)
+  }
+  let payload = null
+
+  if (text) {
+    try {
+      payload = JSON.parse(text)
+    } catch {
+      throw new Error(`서버 응답을 JSON으로 읽을 수 없습니다. (${response.status})`)
+    }
+  }
+
   if (!response.ok || payload?.success === false) {
     throw new Error(payload?.message || getFallbackErrorMessage(response.status))
+  }
+
+  if (!payload) {
+    throw new Error('서버 응답 데이터가 비어 있습니다.')
+  }
+
+  if (!Object.prototype.hasOwnProperty.call(payload, 'data')) {
+    throw new Error('서버 응답에 data 필드가 없습니다.')
   }
 
   return payload
