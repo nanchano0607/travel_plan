@@ -140,4 +140,19 @@ public class AuthService {
                 .phone(user.getPhone())
                 .build();
     }
+
+    // 내 정보 조회 API 2026.07.02 이희경 추가
+    public UpdateProfileResponse getMyInfo(Long userId) {
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        return UpdateProfileResponse.builder()
+                .userId(user.getUserId())
+                .email(user.getEmail())
+                .name(user.getName())
+                .nickname(user.getNickname())
+                .phone(user.getPhone())
+                .build();
+    }
+
 }
