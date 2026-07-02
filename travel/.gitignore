@@ -313,3 +313,7 @@ $RECYCLE.BIN/
 
 # Application secrets
 src/main/resources/application-secret.properties
+
+# Tmp
+.ai/*
+**/.idea_backup/**
