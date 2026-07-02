@@ -44,14 +44,24 @@ public class SmtpVerificationMailSender implements VerificationMailSender {
     @Override
     public void sendPasswordResetLink(String email, String rawToken) {
         try {
-            String resetLink = "http://localhost:5173/reset-password?token=" + rawToken;
+            String resetLink = "http://127.0.0.1:5173/reset-password?token=" + rawToken;
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, "UTF-8");
             helper.setFrom(fromAddress);
             helper.setTo(email);
             helper.setSubject("[Travel] 비밀번호 재설정 링크");
-            helper.setText("아래 링크를 클릭해 비밀번호를 재설정하세요.\n" + resetLink
-                    + "\n\n링크는 30분간 유효합니다.", false);
+            String html = """
+                    <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#f9f9f9;border-radius:8px;">
+                      <h2 style="color:#333;margin-bottom:8px;">비밀번호 재설정</h2>
+                      <p style="color:#555;margin-bottom:24px;">아래 버튼을 클릭해 비밀번호를 재설정하세요.</p>
+                      <a href="%s"
+                         style="display:inline-block;padding:12px 28px;background:#4F46E5;color:#fff;text-decoration:none;border-radius:6px;font-size:15px;font-weight:bold;">
+                        비밀번호 재설정하기
+                      </a>
+                      <p style="color:#999;font-size:12px;margin-top:24px;">링크는 30분간 유효합니다. 본인이 요청하지 않았다면 이 메일을 무시하세요.</p>
+                    </div>
+                    """.formatted(resetLink);
+            helper.setText(html, true);
             mailSender.send(message);
         } catch (MessagingException e) {
             log.error("비밀번호 재설정 메일 발송 실패: {}", email, e);
