@@ -50,7 +50,7 @@ function BoardDetailPage() {
       setStatus({ type: 'success', message: '게시글을 불러왔습니다.' })
       loadCommentLikes(normalizedComments)
     } catch (error) {
-      setStatus({ type: 'error', message: error.message })
+      setStatus({ type: 'error', message:'로그인 후 확인 가능합니다' })
     }
   }
 

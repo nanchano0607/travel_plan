@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
-import { getCurrentUserId, requestJson, resolveFileUrl, unwrapList } from '../api/http.js'
+import {  getAccessToken, getCurrentUserId, requestJson, resolveFileUrl, unwrapList } from '../api/http.js'
 import PageHeader from '../components/PageHeader.jsx'
+import RequireLoginModal from '../components/RequireLoginModal.jsx'
 import { getContent, getPostId, getTitle } from './boardHelpers.js'
 
 const EMPTY_FORM = {
@@ -22,6 +23,11 @@ function BoardWritePage() {
   const [deletingImageId, setDeletingImageId] = useState(null)
   const navigate = useNavigate()
   const userId = getCurrentUserId()
+  const hasAccessToken = Boolean(getAccessToken())
+
+  if (!hasAccessToken) {
+    return <RequireLoginModal />
+  }
 
   useEffect(() => {
     if (!isEditMode) return

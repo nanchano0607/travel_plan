@@ -16,11 +16,6 @@ function AppHeader({ onMenu, onNavigate, token, onLogout }) {
         </span>
       </button>
 
-      <div className="header-search">
-        <span>🔎</span>
-        <input aria-label="여행 검색" placeholder="여행지나 게시글을 검색해 보세요" />
-      </div>
-
       <div className="header-actions">
         {token ? (
           <div className="account-box">

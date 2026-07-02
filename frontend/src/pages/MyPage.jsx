@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 
 import { getCurrentUser, requestJson, unwrapList } from '../api/http.js'
 import PageHeader from '../components/PageHeader.jsx'
+import RequireLoginModal from '../components/RequireLoginModal.jsx'
 import {
   getCommentCount,
   getCommentId,
@@ -144,21 +145,7 @@ function MyPage() {
   }, [currentUser?.userId, posts])
 
   if (!currentUser) {
-    return (
-      <>
-        <PageHeader
-          eyebrow="MY PAGE"
-          title="마이페이지"
-          description="내 정보와 내가 작성한 게시글을 확인할 수 있습니다."
-        />
-
-        <section className="mypage-login-card">
-          <h2>로그인이 필요합니다</h2>
-          <p>마이페이지는 로그인 후 이용할 수 있습니다.</p>
-          <button className="primary" onClick={() => navigate('/auth')}>로그인하러 가기</button>
-        </section>
-      </>
-    )
+    return <RequireLoginModal />
   }
 
   const displayName = currentUser.nickname || '내 계정'

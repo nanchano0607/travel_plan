@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 
 import AppHeader from './components/AppHeader.jsx'
+import RequireLoginModal from './components/RequireLoginModal.jsx'
 import SideNav from './components/SideNav.jsx'
 import { ROUTE_PATHS } from './constants/navigation.js'
 import AuthPage from './pages/AuthPage.jsx'
@@ -77,16 +78,17 @@ function App() {
         token={token}
         onLogout={handleLogout}
       />
-      <div className="app-body">
+      <div className={`app-body ${menuOpen ? 'nav-open' : 'nav-closed'}`}>
         <SideNav active={activePage} open={menuOpen} onNavigate={navigate} />
         <main className="main-content">
           <Routes>
             <Route path="/" element={<OverviewPage onNavigate={navigate} />} />
             <Route path="/auth" element={<AuthPage onLogin={handleLogin} token={token} />} />
             <Route path="/reset-password" element={<ResetPasswordPage token={resetToken} onDone={handleResetDone} />} />
-            <Route path="/travel" element={<TravelPage />} />
+            <Route path="/travel" element={<RequireLoginModal><TravelPage /></RequireLoginModal>} />
             <Route path="/board" element={<BoardPage />} />
             <Route path="/board/write" element={<BoardWritePage />} />
+            <Route path="/board/:postId" element={<RequireLoginModal><BoardDetailPage /></RequireLoginModal>} />
             <Route path="/board/:postId/edit" element={<BoardWritePage />} />
             <Route path="/board/:postId" element={<BoardDetailPage />} />
             <Route path="/mypage" element={<MyPage />} />

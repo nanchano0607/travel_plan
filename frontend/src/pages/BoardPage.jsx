@@ -92,8 +92,8 @@ function BoardPage() {
       />
 
       <div className="board-toolbar">
-        <div className="search-box">
-          🔎
+        <div className="search-box board-search-box">
+          <span>🔎</span>
           <input
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}
@@ -101,10 +101,22 @@ function BoardPage() {
           />
           <button type="button" onClick={() => setKeyword('')}>초기화</button>
         </div>
-        <select value={sortType} onChange={(event) => setSortType(event.target.value)}>
-          <option value="latest">최신순</option>
-          <option value="likes">좋아요순</option>
-        </select>
+        <div className="sort-toggle" aria-label="게시글 정렬">
+          <button
+            type="button"
+            className={sortType === 'latest' ? 'active' : ''}
+            onClick={() => setSortType('latest')}
+          >
+            최신순
+          </button>
+          <button
+            type="button"
+            className={sortType === 'likes' ? 'active' : ''}
+            onClick={() => setSortType('likes')}
+          >
+            좋아요순
+          </button>
+        </div>
       </div>
 
       {status.message && <StatusMessage type={status.type} message={status.message} />}
