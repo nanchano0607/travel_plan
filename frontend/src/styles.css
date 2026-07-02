@@ -72,6 +72,7 @@ button { cursor: pointer; }
 .mypage-login-card h2 { margin: 0; color: #184f49; }
 .mypage-login-card p { margin: 0 0 8px; color: #70827e; line-height: 1.6; }
 .mypage-profile-card { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 20px; align-items: center; padding: 30px; border-radius: 24px; background: linear-gradient(120deg,#153f3b,#287d70); color: white; }
+.mypage-profile-actions { display: flex; flex-direction: column; gap: 10px; }
 .mypage-avatar { width: 76px; height: 76px; display: grid; place-items: center; border-radius: 24px; background: #d9eee7; color: #176b65; font-size: 30px; font-weight: 800; }
 .mypage-profile-info { min-width: 0; }
 .mypage-profile-info span { color: #9ed8cb; font-size: 11px; font-weight: 700; letter-spacing: .12em; }

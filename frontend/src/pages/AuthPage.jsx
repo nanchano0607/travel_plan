@@ -299,8 +299,7 @@ function AuthPage({ onLogin, token }) {
               )}
 
               {mode === 'login' && (
-                <div className="form-options">
-                  <label><input type="checkbox" /> 로그인 유지</label>
+                <div className="form-options" style={{ justifyContent: 'flex-end' }}>
                   <button type="button" onClick={handleForgotPassword}>비밀번호 찾기</button>
                 </div>
               )}

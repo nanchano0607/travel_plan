@@ -4,6 +4,7 @@ import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-
 import AppHeader from './components/AppHeader.jsx'
 import RequireLoginModal from './components/RequireLoginModal.jsx'
 import SideNav from './components/SideNav.jsx'
+import SocialConflictModal from './components/SocialConflictModal.jsx'
 import { ROUTE_PATHS } from './constants/navigation.js'
 import AuthPage from './pages/AuthPage.jsx'
 import BoardDetailPage from './pages/BoardDetailPage.jsx'
@@ -19,6 +20,7 @@ function App() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [token, setToken] = useState(() => localStorage.getItem('accessToken') || '')
   const [resetToken, setResetToken] = useState('')
+  const [socialError, setSocialError] = useState('')
   const routerNavigate = useNavigate()
   const location = useLocation()
   const activePage = getActivePage(location.pathname)
@@ -33,6 +35,7 @@ function App() {
 
     const oauthToken = params.get('token')
     const linked = params.get('linked')
+    const oauthError = params.get('error')
 
     if (oauthToken) {
       localStorage.setItem('accessToken', oauthToken)
@@ -41,6 +44,11 @@ function App() {
     }
 
     if (linked === 'true') {
+      routerNavigate('/auth', { replace: true })
+    }
+
+    if (oauthError) {
+      setSocialError(oauthError)
       routerNavigate('/auth', { replace: true })
     }
   }, [location.pathname, location.search, routerNavigate])
@@ -72,6 +80,14 @@ function App() {
 
   return (
     <div className="app-shell">
+      {socialError === 'SOCIAL_EMAIL_CONFLICT' && (
+        <SocialConflictModal
+          onConfirm={() => {
+            setSocialError('')
+            navigate('auth')
+          }}
+        />
+      )}
       <AppHeader
         onMenu={() => setMenuOpen((value) => !value)}
         onNavigate={navigate}

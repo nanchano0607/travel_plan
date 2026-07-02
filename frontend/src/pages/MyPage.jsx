@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { getCurrentUser, requestJson, unwrapList } from '../api/http.js'
+import EditProfileModal from '../components/EditProfileModal.jsx'
 import PageHeader from '../components/PageHeader.jsx'
 import RequireLoginModal from '../components/RequireLoginModal.jsx'
 import {
@@ -29,6 +30,25 @@ function MyPage() {
 
   const [likedPosts, setLikedPosts] = useState([])
   const [likedPostsStatus, setLikedPostsStatus] = useState({ type: 'idle', message: '' })
+
+  const [profile, setProfile] = useState(null)
+  const [showEditModal, setShowEditModal] = useState(false)
+
+  useEffect(() => {
+    if (!currentUser?.userId) return
+
+    let ignore = false
+
+    requestJson('/api/auth/me')
+      .then((data) => {
+        if (!ignore) setProfile(data)
+      })
+      .catch(() => {})
+
+    return () => {
+      ignore = true
+    }
+  }, [currentUser?.userId])
 
   useEffect(() => {
     if (!currentUser?.userId) return
@@ -165,7 +185,23 @@ function MyPage() {
           <h2>{displayName}</h2>
           <p>여행 일정을 만들고 공유할 수 있습니다.</p>
         </div>
+        <div className="mypage-profile-actions">
+          <button className="secondary" onClick={() => setShowEditModal(true)}>회원정보 수정</button>
+        </div>
       </section>
+
+      {showEditModal && (
+        <EditProfileModal
+          profile={profile}
+          onClose={() => setShowEditModal(false)}
+          onUpdated={(updated) => {
+            setProfile(updated)
+            if (updated.nickname) localStorage.setItem('nickname', updated.nickname)
+            if (updated.name) localStorage.setItem('name', updated.name)
+            setShowEditModal(false)
+          }}
+        />
+      )}
 
       <section className="mypage-grid">
         <article className="mypage-summary-card">

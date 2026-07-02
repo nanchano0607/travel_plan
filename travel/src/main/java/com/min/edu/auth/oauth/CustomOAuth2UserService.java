@@ -121,10 +121,16 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
 
     // @Transactional 보장으로 실패 시 user_auth + social_auth 동시 롤백
     private UserEntity createUser(OAuthUserInfo userInfo) {
+        String nickname;
+        do {
+            nickname = NicknameGenerator.generate();
+        } while (userRepository.existsByNickname(nickname));
+
         UserEntity user = UserEntity.builder()
                 .email(userInfo.getEmail())
                 .provider(userInfo.getProvider())
                 .name(userInfo.getName())
+                .nickname(nickname)
                 .build();
         userRepository.save(user);
 
