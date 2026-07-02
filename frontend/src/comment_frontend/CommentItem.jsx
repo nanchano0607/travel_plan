@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { resolveFileUrl } from "../api/http.js";
 import {
     getReplies,
     createComment,
@@ -11,7 +10,7 @@ import {
     checkCommentLiked,
     uploadCommentImage,
     getCommentImages,
-} from "./CommentApi";
+} from "./CommentApi.js";
 
 /**
  * 댓글 한 개 (대댓글 포함) 렌더링
@@ -185,8 +184,8 @@ export default function CommentItem({ comment, postId, currentUserId, onDeleted 
                     {images.map((img) => (
                         <img
                             key={img.imageId}
-                            src={resolveFileUrl(img.filePath ?? img.imageUrl ?? img.url ?? "")}
-                            alt="댓글 첨부 이미지"
+                            src={resolveCommentImageUrl(img)}
+                            alt={img.fileName || "댓글 첨부 이미지"}
                             className="comment-image-thumb"
                         />
                     ))}
@@ -194,12 +193,8 @@ export default function CommentItem({ comment, postId, currentUserId, onDeleted 
             )}
 
             <div className="comment-item-actions">
-                <button
-                    className={`secondary comment-like-button ${liked ? "liked" : ""}`}
-                    onClick={handleToggleLike}
-                    aria-label="댓글 좋아요"
-                >
-                    <span>♥</span> {likeCount}
+                <button className="secondary" onClick={handleToggleLike}>
+                    {liked ? "♥" : "♡"} {likeCount}
                 </button>
                 <button className="secondary" onClick={() => setReplyMode((v) => !v)}>답글</button>
 
@@ -256,4 +251,21 @@ export default function CommentItem({ comment, postId, currentUserId, onDeleted 
             )}
         </article>
     );
+}
+
+function resolveCommentImageUrl(image) {
+    const rawPath = image?.imageUrl || image?.filePath || "";
+    const normalizedPath = rawPath.replace(/\\/g, "/");
+    const uploadsIndex = normalizedPath.indexOf("/uploads/");
+
+    if (uploadsIndex >= 0) {
+        return resolveFileUrl(normalizedPath.slice(uploadsIndex));
+    }
+
+    const relativeUploadsIndex = normalizedPath.indexOf("uploads/");
+    if (relativeUploadsIndex >= 0) {
+        return resolveFileUrl(`/${normalizedPath.slice(relativeUploadsIndex)}`);
+    }
+
+    return resolveFileUrl(normalizedPath);
 }

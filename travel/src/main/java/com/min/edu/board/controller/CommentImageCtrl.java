@@ -1,6 +1,6 @@
 package com.min.edu.board.controller;
 
-import com.min.edu.board.entity.CommentImageEntity;
+import com.min.edu.board.dto.PostImageDto;
 import com.min.edu.board.service.CommentImageService;
 import com.min.edu.common.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +27,7 @@ public class CommentImageCtrl {
 
     // 댓글 이미지 전체 조회
     @GetMapping("/{commentId}/images")
-    public ApiResponse<List<CommentImageEntity>> getImages(@PathVariable Long commentId) {
+    public ApiResponse<List<PostImageDto>> getImages(@PathVariable Long commentId) {
         return ApiResponse.success(commentImageService.getImagesByCommentId(commentId));
     }
 

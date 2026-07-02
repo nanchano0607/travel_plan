@@ -1,8 +1,11 @@
 import { useNavigate } from 'react-router-dom'
 
+import { getAccessToken } from '../api/http.js'
+
 function RequireLoginModal({ children }) {
   const navigate = useNavigate()
   const hasAccessToken = Boolean(localStorage.getItem('accessToken'))
+
 
   if (hasAccessToken) {
     return children || null

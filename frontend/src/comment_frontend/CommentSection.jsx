@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getTopLevelComments, createComment, getCommentCount } from "./CommentApi";
+import { getTopLevelComments, createComment, getCommentCount } from "./CommentApi.js";
 import CommentItem from "./CommentItem";
 
 /**
